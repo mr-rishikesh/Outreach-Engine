@@ -1,0 +1,6 @@
+
+      /* ✅ import comes first */
+@tailwind base;
+@tailwind components;
+
+@tailwind utilities;
