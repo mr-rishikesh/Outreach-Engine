@@ -1,0 +1,158 @@
+You are an expert full-stack engineer.
+
+I have an existing cold-email automation system with the following stack:
+
+Backend:
+
+* Node.js
+* Express
+* MongoDB
+* Mongoose
+* Nodemailer
+* Groq API (used for AI email personalization)
+
+Frontend:
+
+* React (can use Next.js if needed)
+* TailwindCSS
+
+The system currently:
+
+1. upload csv of apollo data.
+2. Stores them in MongoDB.
+3. Uses Groq AI to generate personalized emails.
+4. Sends emails automatically using Nodemailer.
+
+Each contact in MongoDB contains fields like:
+
+as Contact model is 
+
+
+
+Your task is to analyze the existing codebase and build a complete outreach management dashboard.
+
+Requirements:
+
+1. Build a full frontend dashboard that allows complete control over the MongoDB contacts database.
+
+2. The dashboard should include:
+
+CONTACT TABLE
+
+* Show all contacts in a table
+* Pagination
+* Sorting
+* Search by name/email/company
+* Column visibility toggle
+* Bulk selection (checkbox) and ( line drag like as multiple folder selects by drag)
+
+FILTER SYSTEM (very important)
+Allow filtering by:
+
+* outreachStatus
+* reply.replied
+* reply.replyType
+* followup.followupCount
+* followup.nextFollowupAt
+* emailStats.opened
+* emailStats.emailsSent
+* flags.doNotContact
+* flags.bounced
+* flags.unsubscribe
+* company
+* role
+* date ranges
+
+The filter UI should behave like a CRM or admin panel.
+
+FILTER RESULT VIEW
+
+* Show all filtered contacts
+* Allow selecting multiple contacts
+* Allow selecting all filtered contacts
+
+BULK ACTIONS
+For selected contacts allow:
+
+* Send email
+* Send follow-up
+* Update outreachStatus
+* Update notes
+* Enable/disable followups
+* Mark replied positive
+* Mark replied negative
+* Mark doNotContact
+
+CONTACT DETAIL PAGE
+Clicking a contact should open a detail view showing:
+
+* full contact info
+* reply history
+* email history
+* followup status
+* notes editor
+* manual status update
+* resend email option
+
+EMAIL SENDING PANEL
+Allow sending emails to:
+
+* selected contacts
+* filtered contacts
+
+
+BACKEND CHANGES
+If the backend does not support these features, modify it.
+
+Add necessary routes such as:
+
+GET /contacts
+GET /contacts/filter
+PATCH /contacts/:id
+PATCH /contacts/bulk
+POST /emails/send
+POST /emails/followup
+
+Also optimize database queries for filtering and pagination.
+
+UX REQUIREMENTS
+The UI should look like a modern SaaS dashboard similar to:
+
+* Apollo
+* Hubspot
+* Instantly
+
+Use:
+
+* clean tables
+* filter panels
+* modals
+* bulk actions toolbar
+
+TECHNICAL REQUIREMENTS
+
+* Use React with proper component structure
+* Use reusable hooks for API calls
+* Create clean backend controllers and services
+* Ensure filtering is efficient in MongoDB
+* Avoid loading all 500+ contacts into memory
+
+IMPORTANT
+Before writing code:
+
+1. Analyze the current backend and database models.
+2. Identify missing fields or APIs.
+3. Modify backend if necessary.
+4. Then implement the frontend.
+
+Output:
+
+* Backend changes
+* New API routes
+* Frontend pages
+* Components
+* Folder structure
+* Key code snippets
+* Any migration scripts required
+
+Build this as a production-ready outreach management dashboard.
