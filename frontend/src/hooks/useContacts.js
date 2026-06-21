@@ -21,16 +21,21 @@ export function useContacts() {
       const queryParams = { ...params };
       if (search) queryParams.search = search;
 
+      console.log("📡 Fetching contacts...", { queryParams, hasFilters, search });
+
       let data;
       if (hasFilters) {
         data = await api.filterContacts({ ...queryParams, ...filters });
       } else {
         data = await api.getContacts(queryParams);
       }
+
+      console.log("✅ Contacts received:", { total: data.pagination.total, returned: data.data.length });
+
       setContacts(data.data);
       setPagination(data.pagination);
     } catch (err) {
-      console.error("Failed to fetch contacts:", err);
+      console.error("❌ Failed to fetch contacts:", err);
     } finally {
       setLoading(false);
     }

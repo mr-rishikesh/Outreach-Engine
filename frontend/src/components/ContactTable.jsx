@@ -155,6 +155,9 @@ export default function ContactTable({
                   onChange={(e) => onSelectAll(e.target.checked)}
                 />
               </th>
+              <th className="w-12 px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                #
+              </th>
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -172,7 +175,7 @@ export default function ContactTable({
           <tbody className="divide-y divide-slate-100">
             {loading ? (
               <tr>
-                <td colSpan={columns.length + 1} className="py-20">
+                <td colSpan={columns.length + 2} className="py-20">
                   <div className="flex flex-col items-center justify-center gap-3 text-slate-400">
                     <Loader2 className="w-6 h-6 animate-spin" />
                     <p className="text-sm">Loading contacts...</p>
@@ -181,7 +184,7 @@ export default function ContactTable({
               </tr>
             ) : contacts.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + 1} className="py-20">
+                <td colSpan={columns.length + 2} className="py-20">
                   <div className="flex flex-col items-center justify-center gap-3 text-slate-400">
                     <Inbox className="w-10 h-10 stroke-[1.5]" />
                     <div className="text-center">
@@ -192,7 +195,9 @@ export default function ContactTable({
                 </td>
               </tr>
             ) : (
-              contacts.map((contact) => (
+              contacts.map((contact, index) => {
+                const serialNumber = (pagination.page - 1) * pagination.limit + index + 1;
+                return (
                 <tr
                   key={contact._id}
                   className={`group transition-colors cursor-pointer ${
@@ -209,6 +214,9 @@ export default function ContactTable({
                       checked={selected.includes(contact._id)}
                       onChange={() => onSelect(contact._id)}
                     />
+                  </td>
+                  <td className="w-12 px-4 py-3.5 text-center text-slate-600 font-medium">
+                    {serialNumber}
                   </td>
                   {columns.map((col) => (
                     <td
@@ -259,7 +267,8 @@ export default function ContactTable({
                     </td>
                   ))}
                 </tr>
-              ))
+              );
+              })
             )}
           </tbody>
         </table>

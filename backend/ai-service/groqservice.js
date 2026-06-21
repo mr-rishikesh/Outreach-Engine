@@ -69,12 +69,12 @@ Make sure you are only Returning  a valid JSON like this nothinig else text just
         : "";
 
     const subject =
-      parsed.subject?.trim() || "Internship Application – Full Stack Developer";
+      parsed.subject?.trim() || `Interested in Contributing ${contactData.companyName} as a Full Stack & AI Engineer`;
     const body =
       // cleanText(parsed.body) 
       parsed.body
       ||
-      `I’ve been genuinely inspired by how ${contactData.companyName} blends innovation with real-world impact — it’s the kind of environment I dream to grow in. As a 1st place CodeFront Hackathon winner (AI interview platform) with 1650+ LeetCode and strong MERN skills, I’d love to bring the same energy and problem-solving mindset to your team.`;
+     `I've been following ${contactData.companyName}'s work and appreciate the way your team is building practical solutions that create real value for users.`
    console.log(body)
     return { subject, body };
   } catch (err) {
@@ -82,9 +82,9 @@ Make sure you are only Returning  a valid JSON like this nothinig else text just
 
     // Safe fallback (never break your app)
     return {
-      subject: "Internship Application – Full Stack Developer",
+      subject: `Interested in Contributing ${contactData.companyName} as a Full Stack & AI Engineer`,
       body:
-      `I’ve been genuinely inspired by how ${contactData.companyName} blends innovation with real-world impact — it’s the kind of environment I dream to grow in. As a 1st place CodeFront Hackathon winner (AI interview platform) with 1650+ LeetCode and strong MERN , NEXT skills, I’d love to bring the same energy and problem-solving mindset to your team.`,
+      `I've been following ${contactData.companyName}'s work and appreciate the way your team is building practical solutions that create real value for users.`,
     };
   }
 }

@@ -43,6 +43,8 @@ export const getContacts = async (req, res) => {
       Contact.countDocuments(query),
     ]);
 
+    console.log(`📊 getContacts - Total: ${total}, Returned: ${contacts.length}, Page: ${page}`);
+
     res.json({
       success: true,
       data: contacts,
@@ -54,7 +56,7 @@ export const getContacts = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("getContacts error:", error);
+    console.error("❌ getContacts error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

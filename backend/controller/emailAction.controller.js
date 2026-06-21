@@ -27,11 +27,21 @@ export const sendToContacts = async (req, res) => {
     });
 
     const results = { sent: [], failed: [], skipped: [] };
+    const totalContacts = contacts.length;
+    let processed = 0;
+
+    console.log(`\n📧 Starting email campaign...`);
+    console.log(`📊 Total contacts to process: ${totalContacts}`);
+    console.log(`⏱️  Rate limit: 15 seconds between emails\n`);
+
+    const startTime = Date.now();
 
     for (const contact of contacts) {
       // Block sending to restricted domains
       if (isBlockedDomain(contact.email)) {
         results.skipped.push({ id: contact._id, email: contact.email, reason: "Blocked domain" });
+        processed++;
+        console.log(`⏭️  SKIPPED [${processed}/${totalContacts}] - ${contact.email} (Blocked domain)`);
         continue;
       }
 
@@ -43,27 +53,62 @@ export const sendToContacts = async (req, res) => {
         const { seccess } = await sendEmailsNodemailer({ subject, bdy }, contact.email);
 
         if (seccess) {
+          // Set lastSentDate to today
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
           await Contact.findByIdAndUpdate(contact._id, {
             $set: {
-              lastSentDate: new Date(),
+              lastSentDate: today,
               outreachStatus: contact.outreachStatus === "NOT_SENT" ? "SENT" : contact.outreachStatus,
             },
             $inc: { "emailStats.emailsSent": 1 },
             $push: { emails: { type: "outreach", subject, sentAt: new Date() } },
           });
+
+          processed++;
+          const elapsed = Math.round((Date.now() - startTime) / 1000);
+          console.log(`✅ SENT [${processed}/${totalContacts}] - ${contact.email} (${elapsed}s elapsed)`);
           results.sent.push({ id: contact._id, email: contact.email });
         } else {
+          // Mark as bounced if email sending failed
+          await Contact.findByIdAndUpdate(contact._id, {
+            $set: {
+              "flags.bounced": true,
+              outreachStatus: "NO_RESPONSE",
+            },
+          });
+
+          processed++;
+          const elapsed = Math.round((Date.now() - startTime) / 1000);
+          console.log(`❌ FAILED [${processed}/${totalContacts}] - ${contact.email} (${elapsed}s elapsed) - Marked as BOUNCED`);
           results.failed.push({ id: contact._id, email: contact.email });
         }
 
         // Rate limit between emails
-        if (contacts.length > 1) {
-          await new Promise((resolve) => setTimeout(resolve, 15000));
+        if (contacts.length > 1 && processed < totalContacts) {
+          console.log(`⏳ Waiting 15 seconds before next email...\n`);
+          await new Promise((resolve) => setTimeout(resolve, 10000));
         }
       } catch (err) {
+        // Mark as bounced if error occurs
+        await Contact.findByIdAndUpdate(contact._id, {
+          $set: {
+            "flags.bounced": true,
+            outreachStatus: "NO_RESPONSE",
+          },
+        });
+
+        processed++;
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        console.log(`❌ ERROR [${processed}/${totalContacts}] - ${contact.email}: ${err.message} (${elapsed}s elapsed) - Marked as BOUNCED`);
         results.failed.push({ id: contact._id, email: contact.email, error: err.message });
       }
     }
+
+    const totalTime = Math.round((Date.now() - startTime) / 1000);
+    console.log(`\n✨ Campaign Complete! (Total time: ${totalTime}s)`);
+    console.log(`📈 Summary: ${results.sent.length} sent | ${results.failed.length} failed | ${results.skipped.length} skipped\n`);
 
     res.json({ success: true, results });
   } catch (error) {
@@ -90,11 +135,21 @@ export const sendFollowup = async (req, res) => {
     });
 
     const results = { sent: [], failed: [], skipped: [] };
+    const totalContacts = contacts.length;
+    let processed = 0;
+
+    console.log(`\n📧 Starting follow-up campaign...`);
+    console.log(`📊 Total contacts to process: ${totalContacts}`);
+    console.log(`⏱️  Rate limit: 5 seconds between follow-ups\n`);
+
+    const startTime = Date.now();
 
     for (const contact of contacts) {
       // Block sending to restricted domains
       if (isBlockedDomain(contact.email)) {
         results.skipped.push({ id: contact._id, email: contact.email, reason: "Blocked domain" });
+        processed++;
+        console.log(`⏭️  SKIPPED [${processed}/${totalContacts}] - ${contact.email} (Blocked domain)`);
         continue;
       }
 
@@ -109,11 +164,20 @@ export const sendFollowup = async (req, res) => {
         );
 
         if (seccess) {
+          // Set lastSentDate to today
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          // Schedule next follow-up 3 days from now
+          const nextFollowup = new Date();
+          nextFollowup.setDate(nextFollowup.getDate() + 3);
+          nextFollowup.setHours(0, 0, 0, 0);
+
           await Contact.findByIdAndUpdate(contact._id, {
             $set: {
-              lastSentDate: new Date(),
+              lastSentDate: today,
               outreachStatus: "FOLLOWUP_PENDING",
-              "followup.nextFollowupAt": new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+              "followup.nextFollowupAt": nextFollowup,
             },
             $inc: {
               "followup.followupCount": 1,
@@ -121,18 +185,49 @@ export const sendFollowup = async (req, res) => {
             },
             $push: { emails: { type: "followup", subject: `Re: ${subject}`, sentAt: new Date() } },
           });
+
+          processed++;
+          const elapsed = Math.round((Date.now() - startTime) / 1000);
+          console.log(`✅ SENT [${processed}/${totalContacts}] - ${contact.email} (Follow-up #${contact.followup?.followupCount || 1}, ${elapsed}s elapsed)`);
           results.sent.push({ id: contact._id, email: contact.email });
         } else {
+          // Mark as bounced if follow-up email sending failed
+          await Contact.findByIdAndUpdate(contact._id, {
+            $set: {
+              "flags.bounced": true,
+              outreachStatus: "NO_RESPONSE",
+            },
+          });
+
+          processed++;
+          const elapsed = Math.round((Date.now() - startTime) / 1000);
+          console.log(`❌ FAILED [${processed}/${totalContacts}] - ${contact.email} (${elapsed}s elapsed) - Marked as BOUNCED`);
           results.failed.push({ id: contact._id, email: contact.email });
         }
 
-        if (contacts.length > 1) {
+        if (contacts.length > 1 && processed < totalContacts) {
+          console.log(`⏳ Waiting 5 seconds before next follow-up...\n`);
           await new Promise((resolve) => setTimeout(resolve, 5000));
         }
       } catch (err) {
+        // Mark as bounced if error occurs
+        await Contact.findByIdAndUpdate(contact._id, {
+          $set: {
+            "flags.bounced": true,
+            outreachStatus: "NO_RESPONSE",
+          },
+        });
+
+        processed++;
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        console.log(`❌ ERROR [${processed}/${totalContacts}] - ${contact.email}: ${err.message} (${elapsed}s elapsed) - Marked as BOUNCED`);
         results.failed.push({ id: contact._id, email: contact.email, error: err.message });
       }
     }
+
+    const totalTime = Math.round((Date.now() - startTime) / 1000);
+    console.log(`\n✨ Follow-up Campaign Complete! (Total time: ${totalTime}s)`);
+    console.log(`📈 Summary: ${results.sent.length} sent | ${results.failed.length} failed | ${results.skipped.length} skipped\n`);
 
     res.json({ success: true, results });
   } catch (error) {

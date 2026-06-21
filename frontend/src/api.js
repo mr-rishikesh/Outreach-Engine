@@ -60,4 +60,26 @@ export const api = {
     if (!res.ok) throw new Error(data.error || "Upload failed");
     return data;
   },
+
+  searchApolloLeads: async (params) => {
+    const res = await fetch("http://localhost:5000/api/apollo/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Search failed");
+    return data;
+  },
+
+  importApolloLeads: async (leads) => {
+    const res = await fetch("http://localhost:5000/api/apollo/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leads }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Import failed");
+    return data;
+  },
 };

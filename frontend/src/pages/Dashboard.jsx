@@ -137,6 +137,7 @@ export default function Dashboard() {
                   <option value={25}>25 rows</option>
                   <option value={50}>50 rows</option>
                   <option value={100}>100 rows</option>
+                  <option value={300}>300 rows</option>
                 </select>
                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
