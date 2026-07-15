@@ -1,5 +1,8 @@
 import express from "express";
 import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config();
 import multer from "multer";
 import csv from "csv-parser";
 import fs from "fs";
@@ -56,7 +59,7 @@ app.use("/api/apollo", apolloRouter);
 console.log("✅ Apollo router registered");
 
 // MongoDB connect
-mongoose.connect("mongodb+srv://mrrishikesh2_db_user:qP9ir3ns0hlQDJ5D@cluster0.axlzsbl.mongodb.net/us", {
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(async () => {
