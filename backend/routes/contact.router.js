@@ -6,6 +6,7 @@ import {
   updateContact,
   bulkUpdateContacts,
   getContactStats,
+  createContact,
 } from "../controller/contact.controller.js";
 import { sendToContacts, sendFollowup } from "../controller/emailAction.controller.js";
 
@@ -16,6 +17,7 @@ contactRouter.get("/stats", getContactStats);
 contactRouter.get("/filter", filterContacts);
 contactRouter.get("/:id", getContactById);
 contactRouter.get("/", getContacts);
+contactRouter.post("/", createContact);
 contactRouter.patch("/bulk", bulkUpdateContacts);
 contactRouter.patch("/:id", updateContact);
 

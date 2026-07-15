@@ -17,6 +17,8 @@ const ALL_COLUMNS = [
   { key: "companyName", label: "Company", minW: "min-w-[160px]" },
   { key: "title", label: "Title", minW: "min-w-[160px]" },
   { key: "outreachStatus", label: "Status", minW: "min-w-[140px]" },
+  { key: "engagement", label: "Engagement", minW: "min-w-[110px]" },
+  { key: "source", label: "Source", minW: "min-w-[110px]" },
   { key: "emailStats.emailsSent", label: "Emails Sent", minW: "min-w-[100px]" },
   { key: "reply.replied", label: "Replied", minW: "min-w-[90px]" },
   { key: "followup.followupCount", label: "Followups", minW: "min-w-[90px]" },
@@ -240,6 +242,26 @@ export default function ContactTable({
                         >
                           {(contact.outreachStatus || "NOT_SENT").replace(/_/g, " ")}
                         </span>
+                      ) : col.key === "engagement" ? (
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
+                            contact.engagement === "High"
+                              ? "bg-rose-50 text-rose-700 ring-1 ring-rose-600/10"
+                              : contact.engagement === "Medium"
+                              ? "bg-amber-50 text-amber-700 ring-1 ring-amber-600/10"
+                              : "bg-slate-50 text-slate-600 ring-1 ring-slate-600/10"
+                          }`}
+                        >
+                          {contact.engagement || "Low"}
+                        </span>
+                      ) : col.key === "source" ? (
+                        contact.source ? (
+                          <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded-md">
+                            {contact.source}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )
                       ) : col.key === "reply.replied" ? (
                         <span className={`inline-flex items-center gap-1 text-sm ${
                           getNestedValue(contact, col.key)

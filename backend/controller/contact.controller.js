@@ -1,5 +1,50 @@
 import Contact from "../models/Contacts.js";
 
+// Helper to map and sync dual fields for compatibility
+const mapIncomingContactFields = (data) => {
+  const mapped = { ...data };
+  if (mapped.companey_name !== undefined) mapped.companyName = mapped.companey_name;
+  if (mapped.companyName !== undefined) mapped.companey_name = mapped.companyName;
+
+  if (mapped.role !== undefined) mapped.title = mapped.role;
+  if (mapped.title !== undefined) mapped.role = mapped.title;
+
+  if (mapped.companey_url !== undefined) mapped.website = mapped.companey_url;
+  if (mapped.website !== undefined) mapped.companey_url = mapped.website;
+
+  if (mapped.linkedin !== undefined) mapped.personLinkedinUrl = mapped.linkedin;
+  if (mapped.personLinkedinUrl !== undefined) mapped.linkedin = mapped.personLinkedinUrl;
+
+  if (mapped.twitter !== undefined) mapped.twitterUrl = mapped.twitter;
+  if (mapped.twitterUrl !== undefined) mapped.twitter = mapped.twitterUrl;
+
+  if (mapped.phone !== undefined) mapped.workDirectPhone = mapped.phone;
+  if (mapped.workDirectPhone !== undefined) mapped.phone = mapped.workDirectPhone;
+
+  return mapped;
+};
+
+// POST /api/contacts - manual lead creation
+export const createContact = async (req, res) => {
+  try {
+    const mappedBody = mapIncomingContactFields(req.body);
+    const { email } = mappedBody;
+
+    if (email) {
+      const existing = await Contact.findOne({ email });
+      if (existing) {
+        return res.status(400).json({ success: false, error: "A contact with this email already exists." });
+      }
+    }
+
+    const contact = await Contact.create(mappedBody);
+    res.status(201).json({ success: true, data: contact });
+  } catch (error) {
+    console.error("❌ createContact error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // GET /api/contacts - paginated, sorted, searchable
 export const getContacts = async (req, res) => {
   try {
@@ -20,6 +65,11 @@ export const getContacts = async (req, res) => {
         { lastName: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
         { companyName: { $regex: search, $options: "i" } },
+        { companey_name: { $regex: search, $options: "i" } },
+        { role: { $regex: search, $options: "i" } },
+        { title: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+        { source: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -87,6 +137,12 @@ export const filterContacts = async (req, res) => {
       dateFrom,
       dateTo,
       search,
+      // Enhanced filters
+      engagement,
+      source,
+      last_reach_source,
+      lastReachDateFrom,
+      lastReachDateTo,
     } = req.query;
 
     const query = {};
@@ -97,6 +153,11 @@ export const filterContacts = async (req, res) => {
         { lastName: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
         { companyName: { $regex: search, $options: "i" } },
+        { companey_name: { $regex: search, $options: "i" } },
+        { role: { $regex: search, $options: "i" } },
+        { title: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+        { source: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -139,11 +200,35 @@ export const filterContacts = async (req, res) => {
     if (unsubscribe !== undefined) query["flags.unsubscribe"] = unsubscribe === "true";
 
     if (company) {
-      query.companyName = { $regex: company, $options: "i" };
+      query.$or = [
+        { companyName: { $regex: company, $options: "i" } },
+        { companey_name: { $regex: company, $options: "i" } }
+      ];
     }
 
     if (role) {
-      query.title = { $regex: role, $options: "i" };
+      query.$or = [
+        { title: { $regex: role, $options: "i" } },
+        { role: { $regex: role, $options: "i" } }
+      ];
+    }
+
+    if (engagement) {
+      query.engagement = { $in: engagement.split(",") };
+    }
+
+    if (source) {
+      query.source = { $regex: source, $options: "i" };
+    }
+
+    if (last_reach_source) {
+      query.last_reach_source = { $regex: last_reach_source, $options: "i" };
+    }
+
+    if (lastReachDateFrom || lastReachDateTo) {
+      query.last_reach_date = {};
+      if (lastReachDateFrom) query.last_reach_date.$gte = new Date(lastReachDateFrom);
+      if (lastReachDateTo) query.last_reach_date.$lte = new Date(lastReachDateTo);
     }
 
     if (dateFrom || dateTo) {
@@ -196,9 +281,10 @@ export const getContactById = async (req, res) => {
 // PATCH /api/contacts/:id
 export const updateContact = async (req, res) => {
   try {
+    const mappedBody = mapIncomingContactFields(req.body);
     const contact = await Contact.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      { $set: mappedBody },
       { new: true, runValidators: true }
     );
     if (!contact) {

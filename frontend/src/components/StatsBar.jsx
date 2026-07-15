@@ -41,7 +41,7 @@ export default function StatsBar({ stats }) {
       {cards.map((card) => (
         <div
           key={card.label}
-          className={`bg-white rounded-xl border border-slate-200/80 border-l-4 ${card.accent} p-5 shadow-sm hover:shadow-md transition-shadow`}
+          className={`bg-white rounded-xl border border-slate-200/60 border-t-4 ${card.accent.replace("border-l-", "border-t-")} p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200`}
         >
           <div className="flex items-start justify-between">
             <div className="space-y-1">

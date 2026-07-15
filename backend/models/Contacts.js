@@ -176,6 +176,57 @@ const contactSchema = new mongoose.Schema({
   notes: {
     type: String,
     default: "MARCH17-26"
+  },
+
+  // Enhanced CRM fields
+  last_reach_date: {
+    type: Date,
+    default: null
+  },
+  last_reach_message: {
+    type: String,
+    default: ""
+  },
+  last_reach_source: {
+    type: String,
+    default: ""
+  },
+  source: {
+    type: String,
+    default: ""
+  },
+  engagement: {
+    type: String,
+    enum: ["High", "Medium", "Low"],
+    default: "Low"
+  },
+  phone: {
+    type: String,
+    default: ""
+  },
+  linkedin: {
+    type: String,
+    default: ""
+  },
+  insta: {
+    type: String,
+    default: ""
+  },
+  twitter: {
+    type: String,
+    default: ""
+  },
+  companey_name: {
+    type: String,
+    default: ""
+  },
+  companey_url: {
+    type: String,
+    default: ""
+  },
+  role: {
+    type: String,
+    default: ""
   }
 
 }, { timestamps: true });

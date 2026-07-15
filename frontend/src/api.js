@@ -23,6 +23,12 @@ export const api = {
 
   getContact: (id) => request(`${BASE}/${id}`),
 
+  createContact: (data) =>
+    request(`${BASE}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   updateContact: (id, data) =>
     request(`${BASE}/${id}`, {
       method: "PATCH",

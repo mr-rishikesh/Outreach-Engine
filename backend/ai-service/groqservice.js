@@ -6,7 +6,6 @@ dotenv.config();
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
-
 /**
  * Generates a personalized internship application email.
  * Always returns { subject, body } even if the model output is malformed.
