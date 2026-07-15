@@ -34,7 +34,7 @@ export default function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-5">
         <Outlet />
       </main>
     </div>

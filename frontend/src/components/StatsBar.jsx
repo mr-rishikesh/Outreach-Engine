@@ -37,23 +37,23 @@ export default function StatsBar({ stats }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {cards.map((card) => (
         <div
           key={card.label}
-          className={`bg-white rounded-xl border border-slate-200/60 border-t-4 ${card.accent.replace("border-l-", "border-t-")} p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200`}
+          className={`bg-white rounded-xl border border-slate-200/60 border-t-4 ${card.accent.replace("border-l-", "border-t-")} p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200`}
         >
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 {card.label}
               </p>
-              <p className="text-3xl font-bold text-slate-800 tracking-tight">
+              <p className="text-2xl font-bold text-slate-800 tracking-tight">
                 {card.value.toLocaleString()}
               </p>
             </div>
-            <div className={`p-2.5 rounded-xl ${card.iconBg}`}>
-              <card.icon className={`w-5 h-5 ${card.iconColor}`} />
+            <div className={`p-2 rounded-lg ${card.iconBg}`}>
+              <card.icon className={`w-4.5 h-4.5 ${card.iconColor}`} />
             </div>
           </div>
         </div>

@@ -98,7 +98,7 @@ export default function ContactTable({
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
       {/* Table Header Bar */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100">
         <div className="flex items-center gap-3">
           <p className="text-sm font-medium text-slate-700">
             {pagination.total.toLocaleString()} contacts
@@ -150,21 +150,21 @@ export default function ContactTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50/80">
-              <th className="w-12 px-5 py-3.5 text-left">
+              <th className="w-12 px-4 py-2.5 text-left">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={(e) => onSelectAll(e.target.checked)}
                 />
               </th>
-              <th className="w-12 px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="w-12 px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 #
               </th>
               {columns.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
-                  className={`px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none group ${col.minW}`}
+                  className={`px-3 py-2.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none group ${col.minW}`}
                 >
                   <span className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors">
                     {col.label}
@@ -210,20 +210,20 @@ export default function ContactTable({
                   onMouseDown={() => handleMouseDown(contact._id)}
                   onMouseEnter={() => handleMouseEnter(contact._id)}
                 >
-                  <td className="w-12 px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+                  <td className="w-12 px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selected.includes(contact._id)}
                       onChange={() => onSelect(contact._id)}
                     />
                   </td>
-                  <td className="w-12 px-4 py-3.5 text-center text-slate-600 font-medium">
+                  <td className="w-12 px-3 py-2.5 text-center text-slate-600 font-medium">
                     {serialNumber}
                   </td>
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className="px-4 py-3.5 whitespace-nowrap"
+                      className="px-3 py-2 whitespace-nowrap"
                       onClick={() => {
                         if (dragStart === null) navigate(`/contacts/${contact._id}`);
                       }}
@@ -298,18 +298,18 @@ export default function ContactTable({
 
       {/* Pagination */}
       {pagination.pages > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 px-4 py-3 border-t border-slate-100 bg-slate-50/50">
           <p className="text-sm text-slate-500">
             Showing <span className="font-medium text-slate-700">{startRow}</span> to{" "}
             <span className="font-medium text-slate-700">{endRow}</span> of{" "}
             <span className="font-medium text-slate-700">{pagination.total.toLocaleString()}</span>
           </p>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => onPageChange(pagination.page - 1)}
               disabled={pagination.page <= 1}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -328,7 +328,7 @@ export default function ContactTable({
                 <button
                   key={page}
                   onClick={() => onPageChange(page)}
-                  className={`inline-flex items-center justify-center w-9 h-9 text-sm font-medium rounded-lg transition-all ${
+                  className={`inline-flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg transition-all ${
                     page === pagination.page
                       ? "bg-indigo-600 text-white shadow-sm"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -341,7 +341,7 @@ export default function ContactTable({
             <button
               onClick={() => onPageChange(pagination.page + 1)}
               disabled={pagination.page >= pagination.pages}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
