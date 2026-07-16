@@ -30,6 +30,7 @@ export default function CreateLeadModal({ onClose, onDone }) {
     last_reach_source: "",
     last_reach_message: "",
     notes: "",
+    purpose: "apply",
   });
 
   const handleChange = (e) => {
@@ -232,6 +233,18 @@ export default function CreateLeadModal({ onClose, onDone }) {
                   placeholder="e.g. LinkedIn, Inbound"
                   className={inputClass}
                 />
+              </div>
+              <div>
+                <label className={labelClass}>Lead Purpose / Type</label>
+                <select
+                  name="purpose"
+                  value={form.purpose}
+                  onChange={handleChange}
+                  className={selectClass}
+                >
+                  <option value="apply">Direct Apply (Founder/CEO)</option>
+                  <option value="referral">Referral (SDE/Employee)</option>
+                </select>
               </div>
             </div>
           </FormSection>

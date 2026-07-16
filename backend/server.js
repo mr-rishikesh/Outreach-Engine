@@ -1,6 +1,9 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import dns from "dns";
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 dotenv.config();
 import multer from "multer";
@@ -12,6 +15,8 @@ import { sendInternshipMail } from "./ai-service/service.js";
 import emailRouter from "./routes/email.router.js";
 import contactRouter from "./routes/contact.router.js";
 import apolloRouter from "./routes/apollo.router.js";
+import sequenceRouter from "./routes/sequence.router.js";
+import settingsRouter from "./routes/settings.router.js";
 
 console.log("✅ Routers imported");
 
@@ -57,9 +62,13 @@ app.use("/api/contacts", contactRouter);
 console.log("✅ Contact router registered");
 app.use("/api/apollo", apolloRouter);
 console.log("✅ Apollo router registered");
+app.use("/api/sequences", sequenceRouter);
+console.log("✅ Sequence router registered");
+app.use("/api/settings", settingsRouter);
+console.log("✅ Settings router registered");
 
 // MongoDB connect
-mongoose.connect(process.env.MONGO_URI, {
+mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/outreach-crm", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(async () => {
@@ -112,6 +121,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
       .on("end", async () => {
         try {
           let inserted = 0, skipped = 0;
+          const purpose = req.body.purpose || "apply";
 
           for (const record of results) {
             // Because we mapped headers to lowercase and trimmed them
@@ -136,6 +146,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
             // else insert
             await Contact.create({
+              purpose,
               firstName: record["first name"],
               lastName: record["last name"],
               title: record["title"],

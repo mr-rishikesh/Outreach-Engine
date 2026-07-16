@@ -11,6 +11,7 @@ export default function UploadModal({ onClose, onDone }) {
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [purpose, setPurpose] = useState("apply");
   const inputRef = useRef(null);
 
   const handleFile = (f) => {
@@ -35,7 +36,7 @@ export default function UploadModal({ onClose, onDone }) {
     setPhase("uploading");
     setError(null);
     try {
-      const data = await api.uploadCSV(file);
+      const data = await api.uploadCSV(file, purpose);
       setResult(data);
       setPhase("result");
     } catch (err) {
@@ -140,11 +141,26 @@ export default function UploadModal({ onClose, onDone }) {
                 </div>
               )}
 
+              {/* Purpose Selection */}
+              <div className="flex flex-col gap-1.5 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Select Contact Type / Purpose
+                </label>
+                <select
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                  className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 shadow-sm hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+                >
+                  <option value="apply">Direct Apply (CEOs, Founders)</option>
+                  <option value="referral">Referral (SDEs, Employees)</option>
+                </select>
+              </div>
+
               {/* Upload Button */}
               <button
                 onClick={handleUpload}
                 disabled={!file}
-                className="w-full inline-flex items-center justify-center gap-2 h-11 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="w-full inline-flex items-center justify-center gap-2 h-11 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <Upload className="w-4 h-4" />
                 Upload & Import

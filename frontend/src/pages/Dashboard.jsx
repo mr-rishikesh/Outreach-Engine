@@ -9,6 +9,7 @@ import { Search, SlidersHorizontal, X, ChevronDown, Upload, Plus } from "lucide-
 import UploadModal from "../components/UploadModal";
 import ApolloSearchModal from "../components/ApolloSearchModal";
 import CreateLeadModal from "../components/CreateLeadModal";
+import PinnedFiltersBar from "../components/PinnedFiltersBar";
 
 export default function Dashboard() {
   const {
@@ -70,7 +71,9 @@ export default function Dashboard() {
       {stats && <StatsBar stats={stats} />}
 
       {/* Toolbar Card */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-3 lg:p-3.5">
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-3 lg:p-3.5 flex flex-col gap-3">
+        <PinnedFiltersBar filters={filters} onApply={applyFilters} />
+        
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Search */}
           <form onSubmit={handleSearch} className="w-full lg:max-w-md xl:max-w-lg min-w-0">

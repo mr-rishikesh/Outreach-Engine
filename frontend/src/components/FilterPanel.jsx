@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ListFilter, Calendar, Building2, Briefcase, Flag, Trash2, FolderHeart, ShieldAlert } from "lucide-react";
+import { ListFilter, Calendar, Building2, Briefcase, Flag, Trash2, FolderHeart, ShieldAlert, Pin } from "lucide-react";
 
 const OUTREACH_STATUSES = [
   "NOT_SENT", "SENT", "FOLLOWUP_PENDING", "REPLIED_POSITIVE",
@@ -25,6 +25,7 @@ export default function FilterPanel({ filters, onApply, onClear }) {
   const [local, setLocal] = useState({ ...filters });
   const [savedFilters, setSavedFilters] = useState({});
   const [saveName, setSaveName] = useState("");
+  const [pinnedKeys, setPinnedKeys] = useState([]);
 
   useEffect(() => {
     const raw = localStorage.getItem("outreach_crm_saved_filters");
@@ -35,7 +36,21 @@ export default function FilterPanel({ filters, onApply, onClear }) {
         console.error("Failed to parse saved filters:", e);
       }
     }
+    const rawPinned = localStorage.getItem("outreach_crm_pinned_filters");
+    if (rawPinned) {
+      try {
+        setPinnedKeys(JSON.parse(rawPinned));
+      } catch (e) {}
+    }
   }, []);
+
+  const handleTogglePin = (key) => {
+    const nextKeys = pinnedKeys.includes(key)
+      ? pinnedKeys.filter(k => k !== key)
+      : [...pinnedKeys, key];
+    setPinnedKeys(nextKeys);
+    localStorage.setItem("outreach_crm_pinned_filters", JSON.stringify(nextKeys));
+  };
 
   const set = (key, value) => setLocal((p) => ({ ...p, [key]: value }));
 
@@ -103,7 +118,7 @@ export default function FilterPanel({ filters, onApply, onClear }) {
 
       {/* Status & Reply Filters */}
       <FilterGroup icon={<ListFilter className="w-4 h-4" />} title="Status & Engagement" cols="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-        <FilterField label="Outreach Status">
+        <FilterField label="Outreach Status" name="outreachStatus" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <select value={local.outreachStatus || ""} onChange={(e) => set("outreachStatus", e.target.value)} className={selectClass}>
             <option value="">All statuses</option>
             {OUTREACH_STATUSES.map((s) => (
@@ -112,7 +127,7 @@ export default function FilterPanel({ filters, onApply, onClear }) {
           </select>
         </FilterField>
 
-        <FilterField label="Replied">
+        <FilterField label="Replied" name="replied" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <select value={local.replied ?? ""} onChange={(e) => set("replied", e.target.value)} className={selectClass}>
             <option value="">All</option>
             <option value="true">Yes</option>
@@ -120,7 +135,7 @@ export default function FilterPanel({ filters, onApply, onClear }) {
           </select>
         </FilterField>
 
-        <FilterField label="Reply Type">
+        <FilterField label="Reply Type" name="replyType" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <select value={local.replyType || ""} onChange={(e) => set("replyType", e.target.value)} className={selectClass}>
             <option value="">All types</option>
             {REPLY_TYPES.map((t) => (
@@ -129,7 +144,7 @@ export default function FilterPanel({ filters, onApply, onClear }) {
           </select>
         </FilterField>
 
-        <FilterField label="Email Opened">
+        <FilterField label="Email Opened" name="opened" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <select value={local.opened ?? ""} onChange={(e) => set("opened", e.target.value)} className={selectClass}>
             <option value="">All</option>
             <option value="true">Yes</option>
@@ -137,7 +152,7 @@ export default function FilterPanel({ filters, onApply, onClear }) {
           </select>
         </FilterField>
 
-        <FilterField label="Engagement">
+        <FilterField label="Engagement" name="engagement" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <select value={local.engagement || ""} onChange={(e) => set("engagement", e.target.value)} className={selectClass}>
             <option value="">All levels</option>
             <option value="High">High</option>
@@ -149,27 +164,27 @@ export default function FilterPanel({ filters, onApply, onClear }) {
 
       {/* Activity Filters */}
       <FilterGroup icon={<Briefcase className="w-4 h-4" />} title="Activity & Metrics" cols="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-        <FilterField label="Min Followups">
+        <FilterField label="Min Followups" name="followupCountMin" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <input type="number" min={0} value={local.followupCountMin || ""} onChange={(e) => set("followupCountMin", e.target.value)} className={inputClass} placeholder="e.g. 1" />
         </FilterField>
 
-        <FilterField label="Min Emails Sent">
+        <FilterField label="Min Emails Sent" name="emailsSentMin" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <input type="number" min={0} value={local.emailsSentMin || ""} onChange={(e) => set("emailsSentMin", e.target.value)} className={inputClass} placeholder="e.g. 2" />
         </FilterField>
 
-        <FilterField label="Company Name">
+        <FilterField label="Company Name" name="company" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <input type="text" value={local.company || ""} onChange={(e) => set("company", e.target.value)} className={inputClass} placeholder="Search company..." />
         </FilterField>
 
-        <FilterField label="Job Role / Title">
+        <FilterField label="Job Role / Title" name="role" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <input type="text" value={local.role || ""} onChange={(e) => set("role", e.target.value)} className={inputClass} placeholder="Search role..." />
         </FilterField>
 
-        <FilterField label="Lead Source">
+        <FilterField label="Lead Source" name="source" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <input type="text" value={local.source || ""} onChange={(e) => set("source", e.target.value)} className={inputClass} placeholder="e.g. LinkedIn" />
         </FilterField>
 
-        <FilterField label="Last Reach Source">
+        <FilterField label="Last Reach Source" name="last_reach_source" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <input type="text" value={local.last_reach_source || ""} onChange={(e) => set("last_reach_source", e.target.value)} className={inputClass} placeholder="e.g. Email" />
         </FilterField>
       </FilterGroup>
@@ -177,7 +192,7 @@ export default function FilterPanel({ filters, onApply, onClear }) {
       {/* Flags & Dates Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <FilterGroup icon={<Flag className="w-4 h-4" />} title="Restrict Flags" cols="grid-cols-1 sm:grid-cols-3">
-          <FilterField label="Do Not Contact">
+          <FilterField label="Do Not Contact" name="doNotContact" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
             <select value={local.doNotContact ?? ""} onChange={(e) => set("doNotContact", e.target.value)} className={selectClass}>
               <option value="">All</option>
               <option value="true">Yes</option>
@@ -185,7 +200,7 @@ export default function FilterPanel({ filters, onApply, onClear }) {
             </select>
           </FilterField>
 
-          <FilterField label="Bounced">
+          <FilterField label="Bounced" name="bounced" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
             <select value={local.bounced ?? ""} onChange={(e) => set("bounced", e.target.value)} className={selectClass}>
               <option value="">All</option>
               <option value="true">Yes</option>
@@ -193,7 +208,7 @@ export default function FilterPanel({ filters, onApply, onClear }) {
             </select>
           </FilterField>
 
-          <FilterField label="Unsubscribed">
+          <FilterField label="Unsubscribed" name="unsubscribe" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
             <select value={local.unsubscribe ?? ""} onChange={(e) => set("unsubscribe", e.target.value)} className={selectClass}>
               <option value="">All</option>
               <option value="true">Yes</option>
@@ -279,10 +294,25 @@ function FilterGroup({ icon, title, children, cols }) {
   );
 }
 
-function FilterField({ label, children }) {
+function FilterField({ label, children, name, pinnedKeys, onTogglePin }) {
+  const isPinned = pinnedKeys?.includes(name);
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</label>
+    <div className="flex flex-col gap-1.5 relative group/field">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</label>
+        {name && onTogglePin && (
+          <button
+            type="button"
+            onClick={() => onTogglePin(name)}
+            className={`opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-slate-100 cursor-pointer ${
+              isPinned ? "opacity-100 text-indigo-600" : "text-slate-400"
+            }`}
+            title={isPinned ? "Unpin filter" : "Pin filter to top"}
+          >
+            <Pin className={`w-3.5 h-3.5 ${isPinned ? "fill-indigo-600 text-indigo-600" : ""}`} />
+          </button>
+        )}
+      </div>
       {children}
     </div>
   );
