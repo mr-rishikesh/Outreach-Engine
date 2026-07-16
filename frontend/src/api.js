@@ -55,9 +55,12 @@ export const api = {
 
   getStats: () => request(`${BASE}/stats`),
 
-  uploadCSV: async (file) => {
+  uploadCSV: async (file, purpose) => {
     const formData = new FormData();
     formData.append("file", file);
+    if (purpose) {
+      formData.append("purpose", purpose);
+    }
     const res = await fetch("http://localhost:5000/upload", {
       method: "POST",
       body: formData,
@@ -88,4 +91,30 @@ export const api = {
     if (!res.ok) throw new Error(data.error || "Import failed");
     return data;
   },
+
+  getSequences: () => request("http://localhost:5000/api/sequences"),
+  getSequence: (id) => request(`http://localhost:5000/api/sequences/${id}`),
+  createSequence: (data) => request("http://localhost:5000/api/sequences", {
+    method: "POST",
+    body: JSON.stringify(data)
+  }),
+  updateSequence: (id, data) => request(`http://localhost:5000/api/sequences/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data)
+  }),
+  deleteSequence: (id) => request(`http://localhost:5000/api/sequences/${id}`, {
+    method: "DELETE"
+  }),
+  manageSequenceContacts: (id, payload) => request(`http://localhost:5000/api/sequences/${id}/contacts`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  }),
+  runSequence: (id) => request(`http://localhost:5000/api/sequences/${id}/run`, {
+    method: "POST"
+  }),
+  getSettings: () => request("http://localhost:5000/api/settings"),
+  updateSettings: (data) => request("http://localhost:5000/api/settings", {
+    method: "PUT",
+    body: JSON.stringify(data)
+  }),
 };

@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Mail, Users, LayoutDashboard } from "lucide-react";
+import { Mail, Users, LayoutDashboard, Settings as SettingsIcon } from "lucide-react";
 
 export default function Layout() {
   const { pathname } = useLocation();
@@ -25,8 +25,11 @@ export default function Layout() {
               <NavLink to="/" active={pathname === "/"} icon={<LayoutDashboard className="w-4 h-4" />}>
                 Dashboard
               </NavLink>
-              <NavLink to="/" active={false} icon={<Users className="w-4 h-4" />}>
-                Contacts
+              <NavLink to="/sequences" active={pathname.startsWith("/sequences")} icon={<Mail className="w-4 h-4" />}>
+                Sequences
+              </NavLink>
+              <NavLink to="/settings" active={pathname === "/settings"} icon={<SettingsIcon className="w-4 h-4" />}>
+                Settings
               </NavLink>
             </div>
           </div>

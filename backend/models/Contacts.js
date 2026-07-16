@@ -227,6 +227,11 @@ const contactSchema = new mongoose.Schema({
   role: {
     type: String,
     default: ""
+  },
+  purpose: {
+    type: String,
+    enum: ["apply", "referral", "referall"],
+    default: "apply"
   }
 
 }, { timestamps: true });

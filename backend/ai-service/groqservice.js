@@ -4,7 +4,7 @@ import { prompts } from "./prompt.js";
 import { extractJsonFromModel } from "./extractJsonFromModel.js";
 dotenv.config();
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: process.env.GROQ_API_KEY || "placeholder_groq_api_key_to_prevent_startup_crash",
 });
 /**
  * Generates a personalized internship application email.

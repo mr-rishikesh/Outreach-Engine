@@ -1,4 +1,5 @@
 import Contact from "../models/Contacts.js";
+import Sequence from "../models/Sequence.js";
 
 // Helper to map and sync dual fields for compatibility
 const mapIncomingContactFields = (data) => {
@@ -235,6 +236,41 @@ export const filterContacts = async (req, res) => {
       query.createdAt = {};
       if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
       if (dateTo) query.createdAt.$lte = new Date(dateTo);
+    }
+
+    const { purpose, excludeSequence, excludeRecent } = req.query;
+
+    if (purpose) {
+      if (purpose === "referral") {
+        query.purpose = { $in: ["referral", "referall"] };
+      } else {
+        query.$or = [
+          { purpose: "apply" },
+          { purpose: { $exists: false } },
+          { purpose: null }
+        ];
+      }
+    }
+
+    if (excludeSequence === "true") {
+      const sequences = await Sequence.find({ status: { $ne: "stopped" } }).lean();
+      const excludedIds = [];
+      sequences.forEach(seq => {
+        seq.contacts.forEach(c => {
+          if (c.status !== "removed") {
+            excludedIds.push(c.contactId);
+          }
+        });
+      });
+      if (excludedIds.length > 0) {
+        query._id = { ...query._id, $nin: excludedIds };
+      }
+    }
+
+    if (excludeRecent === "true") {
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      query.lastSentDate = { ...query.lastSentDate, $lt: threeDaysAgo };
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
