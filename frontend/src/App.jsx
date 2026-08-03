@@ -5,18 +5,21 @@ import ContactDetail from "./pages/ContactDetail";
 import Sequences from "./pages/Sequences";
 import CreateSequence from "./pages/CreateSequence";
 import Settings from "./pages/Settings";
+import { WorkerProvider } from "./context/WorkerContext";
 
 function App() {
   return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/contacts/:id" element={<ContactDetail />} />
-        <Route path="/sequences" element={<Sequences />} />
-        <Route path="/sequences/new" element={<CreateSequence />} />
-        <Route path="/settings" element={<Settings />} />
-      </Route>
-    </Routes>
+    <WorkerProvider>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/contacts/:id" element={<ContactDetail />} />
+          <Route path="/sequences" element={<Sequences />} />
+          <Route path="/sequences/new" element={<CreateSequence />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+      </Routes>
+    </WorkerProvider>
   );
 }
 

@@ -27,6 +27,10 @@ const sequenceSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  subject: {
+    type: String,
+    default: ""
+  },
   type: {
     type: String,
     enum: ["direct_apply", "referral"],
@@ -44,6 +48,10 @@ const sequenceSchema = new mongoose.Schema({
   body: {
     type: String,
     required: true
+  },
+  followupSubject: {
+    type: String,
+    default: ""
   },
   signature: {
     type: String,
@@ -68,6 +76,10 @@ const sequenceSchema = new mongoose.Schema({
   maxFollowups: {
     type: Number,
     default: 1
+  },
+  lastSentDate: {
+    type: Date,
+    default: null
   },
   contacts: [sequenceContactSchema]
 }, { timestamps: true });

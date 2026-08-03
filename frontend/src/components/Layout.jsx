@@ -1,8 +1,10 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Mail, Users, LayoutDashboard, Settings as SettingsIcon } from "lucide-react";
+import { Mail, Users, LayoutDashboard, Settings as SettingsIcon, Loader2 } from "lucide-react";
+import { useWorker } from "../context/WorkerContext";
 
 export default function Layout() {
   const { pathname } = useLocation();
+  const { status, current, total, sequenceName, type } = useWorker();
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -34,6 +36,39 @@ export default function Layout() {
             </div>
           </div>
         </div>
+
+        {/* Global Progress Banner */}
+        {status !== "idle" && (
+          <div className={`border-t px-4 py-2.5 text-xs text-white transition-all flex items-center justify-between gap-4 select-none ${
+            status === "running" ? "bg-indigo-600 border-indigo-755 animate-pulse" : "bg-emerald-600 border-emerald-700"
+          }`}>
+            <div className="flex items-center gap-2 font-bold min-w-0">
+              {status === "running" ? (
+                <Loader2 className="w-4 h-4 text-white animate-spin shrink-0" />
+              ) : (
+                <span className="shrink-0 bg-emerald-500 rounded-full p-0.5 text-[9px] text-white">✓</span>
+              )}
+              <span className="truncate">
+                {status === "running"
+                  ? `Sending ${type === "followup" ? "follow-up" : "primary"} emails for "${sequenceName}"...`
+                  : `Finished sending "${sequenceName}" emails!`
+                }
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="font-mono font-bold">
+                {current} / {total} Sent
+              </span>
+              <div className="w-24 bg-white/20 h-2 rounded-full overflow-hidden hidden sm:block">
+                <div
+                  className="h-full bg-white transition-all duration-300"
+                  style={{ width: `${(current / total) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Main Content */}

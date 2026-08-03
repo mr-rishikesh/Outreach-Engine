@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import dns from "dns";
+import os from "os";
 
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
@@ -79,7 +80,7 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/outreach-cr
 })
   .catch(err => console.error("❌ MongoDB error:", err));
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ dest: os.tmpdir() });
 
 // app.get("/res" ,async (req , res) => {
 //   console.log("route");
@@ -240,4 +241,8 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+}
+
+export default app;

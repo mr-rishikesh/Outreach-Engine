@@ -1,4 +1,5 @@
-const BASE = "http://localhost:5000/api/contacts";
+const API_URL = import.meta.env.VITE_API_URL || "";
+const BASE = `${API_URL}/api/contacts`;
 
 async function request(url, options = {}) {
   const res = await fetch(url, {
@@ -61,7 +62,7 @@ export const api = {
     if (purpose) {
       formData.append("purpose", purpose);
     }
-    const res = await fetch("http://localhost:5000/upload", {
+    const res = await fetch(`${API_URL}/upload`, {
       method: "POST",
       body: formData,
     });
@@ -71,7 +72,7 @@ export const api = {
   },
 
   searchApolloLeads: async (params) => {
-    const res = await fetch("http://localhost:5000/api/apollo/search", {
+    const res = await fetch(`${API_URL}/api/apollo/search`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
@@ -82,7 +83,7 @@ export const api = {
   },
 
   importApolloLeads: async (leads) => {
-    const res = await fetch("http://localhost:5000/api/apollo/import", {
+    const res = await fetch(`${API_URL}/api/apollo/import`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ leads }),
@@ -92,28 +93,37 @@ export const api = {
     return data;
   },
 
-  getSequences: () => request("http://localhost:5000/api/sequences"),
-  getSequence: (id) => request(`http://localhost:5000/api/sequences/${id}`),
-  createSequence: (data) => request("http://localhost:5000/api/sequences", {
+  getSequences: () => request(`${API_URL}/api/sequences`),
+  getSequence: (id) => request(`${API_URL}/api/sequences/${id}`),
+  createSequence: (data) => request(`${API_URL}/api/sequences`, {
     method: "POST",
     body: JSON.stringify(data)
   }),
-  updateSequence: (id, data) => request(`http://localhost:5000/api/sequences/${id}`, {
+  updateSequence: (id, data) => request(`${API_URL}/api/sequences/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data)
   }),
-  deleteSequence: (id) => request(`http://localhost:5000/api/sequences/${id}`, {
+  deleteSequence: (id) => request(`${API_URL}/api/sequences/${id}`, {
     method: "DELETE"
   }),
-  manageSequenceContacts: (id, payload) => request(`http://localhost:5000/api/sequences/${id}/contacts`, {
+  manageSequenceContacts: (id, payload) => request(`${API_URL}/api/sequences/${id}/contacts`, {
     method: "POST",
     body: JSON.stringify(payload)
   }),
-  runSequence: (id) => request(`http://localhost:5000/api/sequences/${id}/run`, {
-    method: "POST"
+  runSequence: (id, payload) => request(`${API_URL}/api/sequences/${id}/run`, {
+    method: "POST",
+    body: payload ? JSON.stringify(payload) : undefined
   }),
-  getSettings: () => request("http://localhost:5000/api/settings"),
-  updateSettings: (data) => request("http://localhost:5000/api/settings", {
+  getEligibleContacts: (id, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`${API_URL}/api/sequences/${id}/eligible?${qs}`);
+  },
+  sendSingleSequenceEmail: (id, payload) => request(`${API_URL}/api/sequences/${id}/send-single`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  }),
+  getSettings: () => request(`${API_URL}/api/settings`),
+  updateSettings: (data) => request(`${API_URL}/api/settings`, {
     method: "PUT",
     body: JSON.stringify(data)
   }),

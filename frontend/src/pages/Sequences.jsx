@@ -6,13 +6,12 @@ import {
   ChevronRight, RefreshCw, X, Check, AlertCircle, Loader2, ArrowRight
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useWorker } from "../context/WorkerContext";
 
 export default function Sequences() {
   const [sequences, setSequences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSequence, setSelectedSequence] = useState(null);
-  const [runLogs, setRunLogs] = useState(null); // { status: 'idle' | 'running' | 'done', logs: [] }
-  const [runLoading, setRunLoading] = useState(false);
 
   // Detail view edit states
   const [editMode, setEditMode] = useState(false);
@@ -123,39 +122,8 @@ export default function Sequences() {
     }
   };
 
-  const handleRunSequence = async (seqId) => {
-    setRunLoading(true);
-    setRunLogs({ status: "running", logs: ["Initializing sequence runner..."] });
-    try {
-      const res = await api.runSequence(seqId);
-      const { results } = res;
-      
-      const nextLogs = ["Sequence processing batch completed."];
-      nextLogs.push(`Sent: ${results.sent.length} emails`);
-      nextLogs.push(`Failed: ${results.failed.length} emails`);
-      nextLogs.push(`Skipped: ${results.skipped.length} emails`);
-
-      if (results.sent.length > 0) {
-        results.sent.forEach(s => {
-          nextLogs.push(`✅ SENT: ${s.email} (${s.isFollowup ? 'Follow-up' : 'Primary'})`);
-        });
-      }
-      if (results.failed.length > 0) {
-        results.failed.forEach(f => {
-          nextLogs.push(`❌ FAILED: ${f.email} - ${f.error || f.reason || 'Unknown error'}`);
-        });
-      }
-
-      setRunLogs({ status: "done", logs: nextLogs });
-      loadSequences();
-    } catch (err) {
-      console.error(err);
-      setRunLogs({ status: "done", logs: ["Error running sequence: " + err.message] });
-      toast.error("Failed to execute sequence.");
-    } finally {
-      setRunLoading(false);
-    }
-  };
+  const { status: workerStatus, startSending } = useWorker();
+  const isSendingActive = workerStatus === "running";
 
   return (
     <div className="space-y-6">
@@ -217,9 +185,14 @@ export default function Sequences() {
                           <h3 className="font-bold text-slate-800 text-sm leading-snug line-clamp-1">
                             {seq.name}
                           </h3>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded mt-1 inline-block">
-                            {seq.type === "direct_apply" ? "Direct Apply" : "Referral"}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded inline-block">
+                              {seq.type === "direct_apply" ? "Direct Apply" : "Referral"}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded inline-block">
+                              Last Sent: {seq.lastSentDate ? new Date(seq.lastSentDate).toLocaleDateString() : "Never"}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Status Badge */}
@@ -289,12 +262,23 @@ export default function Sequences() {
 
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleRunSequence(seq._id)}
-                          disabled={seq.status !== "active" || runLoading}
-                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                          onClick={() => startSending(seq._id, seq.name, "primary")}
+                          disabled={seq.status !== "active" || isSendingActive}
+                          className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                          title="Send Primary Mail"
                         >
-                          <RefreshCw className="w-3 h-3" />
-                          Run Batch
+                          <Mail className="w-3 h-3" />
+                          Send Mail
+                        </button>
+
+                        <button
+                          onClick={() => startSending(seq._id, seq.name, "followup")}
+                          disabled={seq.status !== "active" || isSendingActive}
+                          className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                          title="Send Follow-up Mail"
+                        >
+                          <ArrowRight className="w-3 h-3" />
+                          Send Follow-up
                         </button>
 
                         <button
@@ -533,67 +517,6 @@ export default function Sequences() {
           )}
         </div>
       </div>
-
-      {/* Batch Running Logs Modal */}
-      {runLogs && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 text-slate-100 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden ring-1 ring-white/10">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/80">
-              <div className="flex items-center gap-2">
-                {runLoading ? (
-                  <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4 text-emerald-400 font-bold" />
-                )}
-                <h3 className="font-bold text-sm">Sequence Run Logs</h3>
-              </div>
-              {!runLoading && (
-                <button
-                  onClick={() => setRunLogs(null)}
-                  className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Logs Area */}
-            <div className="p-6 space-y-4">
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-[11px] leading-relaxed max-h-80 overflow-y-auto space-y-1.5 scrollbar-thin">
-                {runLogs.logs.map((log, i) => (
-                  <p
-                    key={i}
-                    className={
-                      log.startsWith("❌")
-                        ? "text-red-400"
-                        : log.startsWith("✅")
-                        ? "text-emerald-400"
-                        : log.startsWith("⏭️")
-                        ? "text-amber-400"
-                        : "text-slate-300"
-                    }
-                  >
-                    {log}
-                  </p>
-                ))}
-                {runLoading && (
-                  <p className="text-slate-500 animate-pulse mt-2">Processing campaigns, please wait (nodemailing contacts)...</p>
-                )}
-              </div>
-
-              {!runLoading && (
-                <button
-                  onClick={() => setRunLogs(null)}
-                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-755 text-white font-semibold rounded-xl text-xs transition-colors cursor-pointer"
-                >
-                  Close Logs
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

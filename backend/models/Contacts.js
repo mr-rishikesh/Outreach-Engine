@@ -232,6 +232,11 @@ const contactSchema = new mongoose.Schema({
     type: String,
     enum: ["apply", "referral", "referall"],
     default: "apply"
+  },
+  activeSequenceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Sequence",
+    default: null
   }
 
 }, { timestamps: true });
