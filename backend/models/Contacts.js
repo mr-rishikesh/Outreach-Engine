@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Counter from "./Counter.js";
 
 const contactSchema = new mongoose.Schema({
   lastSentDate : { type: Date ,    default: () => {
@@ -232,8 +233,103 @@ const contactSchema = new mongoose.Schema({
     type: String,
     enum: ["apply", "referral", "referall"],
     default: "apply"
+  },
+  leadId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  sequence_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Sequence",
+    default: null
+  },
+  batch_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Batch",
+    default: null
+  },
+  next_send_date: {
+    type: Date,
+    default: null
+  },
+  next_send_type: {
+    type: String,
+    enum: ["email", "followup", null],
+    default: null
   }
 
 }, { timestamps: true });
 
-export default mongoose.model("Contact", contactSchema);
+contactSchema.pre("save", async function (next) {
+  if (!this.leadId) {
+    try {
+      const counter = await Counter.findOneAndUpdate(
+        { id: "leadId" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      this.leadId = `LD-${10000 + counter.seq}`;
+    } catch (err) {
+      return next(err);
+    }
+  }
+
+  // Auto-spawn associated Company profile if it does not exist
+  const companyName = this.companyName;
+  if (companyName) {
+    try {
+      const Company = mongoose.model("Company");
+      const existing = await Company.findOne({ name: { $regex: new RegExp(`^${companyName.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } });
+      if (!existing) {
+        await Company.create({
+          name: companyName,
+          industry: this.industry || "",
+          employees: this.employees || "",
+          city: this.city || "",
+          state: this.state || "",
+          country: this.country || "",
+          website: this.website || "",
+          annualRevenue: this.annualRevenue || "",
+          totalFunding: this.totalFunding || ""
+        });
+      }
+    } catch (err) {
+      console.error("⚠️ Failed to auto-spawn company on contact save:", err);
+    }
+  }
+
+  next();
+});
+
+const ContactModel = mongoose.model("Contact", contactSchema);
+
+export const backfillLeadIds = async () => {
+  try {
+    const contactsMissingLeadId = await ContactModel.find({
+      $or: [
+        { leadId: { $exists: false } },
+        { leadId: null },
+        { leadId: "" }
+      ]
+    });
+
+    if (contactsMissingLeadId.length > 0) {
+      console.log(`♻️ Found ${contactsMissingLeadId.length} contacts missing leadId. Backfilling...`);
+      for (const contact of contactsMissingLeadId) {
+        const counter = await Counter.findOneAndUpdate(
+          { id: "leadId" },
+          { $inc: { seq: 1 } },
+          { new: true, upsert: true }
+        );
+        contact.leadId = `LD-${10000 + counter.seq}`;
+        await contact.save();
+      }
+      console.log("✅ Backfill complete!");
+    }
+  } catch (error) {
+    console.error("❌ Failed to backfill leadIds:", error);
+  }
+};
+
+export default ContactModel;

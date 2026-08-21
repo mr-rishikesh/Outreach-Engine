@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Sequence from "../models/Sequence.js";
 import Contact from "../models/Contacts.js";
 import { sendEmailsNodemailer } from "../email-service/index.js";
@@ -86,33 +87,39 @@ export const getSequences = async (req, res) => {
   try {
     const sequences = await Sequence.find().lean();
     
-    // Map with statistics
-    const sequencesWithStats = sequences.map(seq => {
+    // Map with statistics from Batches
+    const sequencesWithStats = await Promise.all(sequences.map(async (seq) => {
+      const batches = await mongoose.model("Batch").find({ sequence_id: seq._id }).populate("contacts");
+      
       const stats = {
-        total: seq.contacts.length,
+        total: 0,
         pending: 0,
         sent: 0,
         replied: 0,
         removed: 0
       };
 
-      seq.contacts.forEach(c => {
-        if (c.status === "removed") {
-          stats.removed++;
-        } else if (c.status === "replied") {
-          stats.replied++;
-        } else if (c.status === "pending") {
-          stats.pending++;
-        } else {
-          stats.sent++;
-        }
+      batches.forEach(b => {
+        if (!b.contacts) return;
+        stats.total += b.contacts.length;
+        b.contacts.forEach(c => {
+          if (c.reply?.replied) {
+            stats.replied++;
+          } else if (c.flags?.doNotContact || c.flags?.bounced || c.flags?.unsubscribe) {
+            stats.removed++;
+          } else if (c.next_send_type === "email" || (!c.next_send_type && c.emailStats?.emailsSent === 0)) {
+            stats.pending++;
+          } else {
+            stats.sent++;
+          }
+        });
       });
 
       return {
         ...seq,
         stats
       };
-    });
+    }));
 
     res.json({ success: true, data: sequencesWithStats });
   } catch (error) {
@@ -124,9 +131,7 @@ export const getSequences = async (req, res) => {
 // GET /api/sequences/:id - Get detailed single sequence
 export const getSequence = async (req, res) => {
   try {
-    const sequence = await Sequence.findById(req.params.id)
-      .populate("contacts.contactId")
-      .lean();
+    const sequence = await Sequence.findById(req.params.id).lean();
 
     if (!sequence) {
       return res.status(404).json({ success: false, error: "Sequence not found." });
@@ -142,10 +147,11 @@ export const getSequence = async (req, res) => {
 // PATCH /api/sequences/:id - Update sequence templates/settings
 export const updateSequence = async (req, res) => {
   try {
-    const { name, status, greeting, body, signature, followupGreeting, followupBody, followupSignature, followupDays, maxFollowups } = req.body;
+    const { name, subject, status, greeting, body, signature, followupGreeting, followupBody, followupSignature, followupDays, maxFollowups } = req.body;
     
     const updateData = {};
     if (name !== undefined) updateData.name = name;
+    if (subject !== undefined) updateData.subject = subject;
     if (status !== undefined) updateData.status = status;
     if (greeting !== undefined) updateData.greeting = greeting;
     if (body !== undefined) updateData.body = body;

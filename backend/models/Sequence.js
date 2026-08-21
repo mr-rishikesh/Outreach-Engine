@@ -27,6 +27,10 @@ const sequenceSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  subject: {
+    type: String,
+    default: ""
+  },
   type: {
     type: String,
     enum: ["direct_apply", "referral"],

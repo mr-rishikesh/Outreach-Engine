@@ -3,7 +3,7 @@ import { api } from "../api";
 import toast from "react-hot-toast";
 import {
   Send, RefreshCw, MessageSquare, Ban, X,
-  ThumbsUp, ThumbsDown, StickyNote, ToggleRight, ToggleLeft,
+  ThumbsUp, ThumbsDown, StickyNote, ToggleRight, ToggleLeft, Plus
 } from "lucide-react";
 import EmailSendingModal from "./EmailSendingModal";
 
@@ -27,6 +27,40 @@ export default function BulkActions({ selectedIds, count, onClear, onDone }) {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [notes, setNotes] = useState("");
+
+  // Batch states
+  const [sequences, setSequences] = useState([]);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [batchForm, setBatchForm] = useState({
+    name: "",
+    sequence_id: "",
+    email_send_date: new Date().toISOString().split("T")[0],
+    follow_up_dates: []
+  });
+
+  const handleOpenBatchModal = async () => {
+    try {
+      const res = await api.getSequences();
+      const seqs = res.data || [];
+      setSequences(seqs);
+      setBatchForm({
+        name: "",
+        sequence_id: seqs.length > 0 ? seqs[0]._id : "",
+        email_send_date: new Date().toISOString().split("T")[0],
+        follow_up_dates: seqs.length > 0 && seqs[0].followupDays ? [
+          (() => {
+            const d = new Date();
+            d.setDate(d.getDate() + seqs[0].followupDays);
+            return d.toISOString().split("T")[0];
+          })()
+        ] : []
+      });
+      setShowBatchModal(true);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load sequences templates.");
+    }
+  };
 
   // Email sending modal state
   const [emailModal, setEmailModal] = useState({ phase: null, type: null, result: null });
@@ -93,6 +127,9 @@ export default function BulkActions({ selectedIds, count, onClear, onDone }) {
         <BulkBtn onClick={handleSendFollowup} disabled={loading} icon={<RefreshCw />}>
           Followup
         </BulkBtn>
+        <BulkBtn onClick={handleOpenBatchModal} disabled={loading} icon={<Plus />}>
+          New Batch
+        </BulkBtn>
         <BulkBtn onClick={() => setShowStatusModal(true)} disabled={loading} icon={<MessageSquare />}>
           Status
         </BulkBtn>
@@ -127,6 +164,190 @@ export default function BulkActions({ selectedIds, count, onClear, onDone }) {
           <X className="w-4 h-4 text-white" />
         </button>
       </div>
+
+      {/* New Batch Modal */}
+      {showBatchModal && (
+        <Modal onClose={() => setShowBatchModal(false)}>
+          <div className="p-6 max-w-xl w-full text-xs">
+            <h3 className="text-sm font-extrabold text-slate-800 mb-1.5 uppercase tracking-wide">Schedule New Campaign Batch</h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-5">Create a batch for {count} selected contacts</p>
+
+            <div className="space-y-4">
+              {/* Batch Name */}
+              <div>
+                <label className="block font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Batch Name</label>
+                <input
+                  type="text"
+                  value={batchForm.name}
+                  onChange={(e) => setBatchForm({ ...batchForm, name: e.target.value })}
+                  placeholder="e.g. Q3 Outreach Batch A"
+                  className="w-full h-9 px-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+                />
+              </div>
+
+              {/* Select Sequence */}
+              <div>
+                <label className="block font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Select Sequence Template</label>
+                <select
+                  value={batchForm.sequence_id}
+                  onChange={(e) => {
+                    const seqId = e.target.value;
+                    const seq = sequences.find(s => s._id === seqId);
+                    setBatchForm(prev => {
+                      const suggestedFollowups = [];
+                      if (prev.email_send_date && seq?.followupDays) {
+                        const dateObj = new Date(prev.email_send_date);
+                        dateObj.setDate(dateObj.getDate() + seq.followupDays);
+                        suggestedFollowups.push(dateObj.toISOString().split("T")[0]);
+                      }
+                      return {
+                        ...prev,
+                        sequence_id: seqId,
+                        follow_up_dates: suggestedFollowups
+                      };
+                    });
+                  }}
+                  className="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                >
+                  <option value="" disabled>-- Select a Sequence --</option>
+                  {sequences.map((seq) => (
+                    <option key={seq._id} value={seq._id}>
+                      {seq.name} ({seq.type === "direct_apply" ? "Direct Apply" : "Referral"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Send date & Follow-ups */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Initial Email Send Date</label>
+                  <input
+                    type="date"
+                    value={batchForm.email_send_date}
+                    onChange={(e) => {
+                      const newSendDate = e.target.value;
+                      const seq = sequences.find(s => s._id === batchForm.sequence_id);
+                      setBatchForm(prev => {
+                        const suggestedFollowups = [];
+                        if (newSendDate && seq?.followupDays) {
+                          const dateObj = new Date(newSendDate);
+                          dateObj.setDate(dateObj.getDate() + seq.followupDays);
+                          suggestedFollowups.push(dateObj.toISOString().split("T")[0]);
+                        }
+                        return {
+                          ...prev,
+                          email_send_date: newSendDate,
+                          follow_up_dates: suggestedFollowups
+                        };
+                      });
+                    }}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Follow-up Send Dates</label>
+                  <div className="space-y-2">
+                    {batchForm.follow_up_dates.map((date, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5">
+                        <input
+                          type="date"
+                          value={date}
+                          onChange={(e) => {
+                            const newDates = [...batchForm.follow_up_dates];
+                            newDates[idx] = e.target.value;
+                            setBatchForm({ ...batchForm, follow_up_dates: newDates });
+                          }}
+                          className="flex-1 h-9 px-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newDates = batchForm.follow_up_dates.filter((_, i) => i !== idx);
+                            setBatchForm({ ...batchForm, follow_up_dates: newDates });
+                          }}
+                          className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-100 transition-colors cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newDates = [...batchForm.follow_up_dates];
+                        let baseDate = batchForm.email_send_date || new Date().toISOString().split("T")[0];
+                        if (newDates.length > 0) {
+                          baseDate = newDates[newDates.length - 1];
+                        }
+                        const seq = sequences.find(s => s._id === batchForm.sequence_id);
+                        const dateObj = new Date(baseDate);
+                        dateObj.setDate(dateObj.getDate() + (seq?.followupDays || 3));
+                        newDates.push(dateObj.toISOString().split("T")[0]);
+                        setBatchForm({ ...batchForm, follow_up_dates: newDates });
+                      }}
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3 font-bold" />
+                      Add Date
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={async () => {
+                  if (!batchForm.name.trim()) {
+                    toast.error("Batch name is required.");
+                    return;
+                  }
+                  if (!batchForm.sequence_id) {
+                    toast.error("Please select a sequence template.");
+                    return;
+                  }
+                  if (!batchForm.email_send_date) {
+                    toast.error("Email send date is required.");
+                    return;
+                  }
+
+                  setLoading(true);
+                  try {
+                    await api.createBatch({
+                      name: batchForm.name,
+                      sequence_id: batchForm.sequence_id,
+                      contactIds: selectedIds,
+                      email_send_date: batchForm.email_send_date,
+                      follow_up_dates: batchForm.follow_up_dates,
+                    });
+                    toast.success(`Batch "${batchForm.name}" created and scheduled for ${count} contacts!`);
+                    setShowBatchModal(false);
+                    onDone();
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Failed to create batch: " + err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="flex-1 h-9 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-sm transition-all cursor-pointer disabled:opacity-40"
+              >
+                {loading ? "Scheduling..." : "Save Scheduled Batch"}
+              </button>
+              <button
+                onClick={() => setShowBatchModal(false)}
+                className="h-9 px-5 border border-slate-200 text-slate-600 font-semibold rounded-lg hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Email Sending / Result Modal */}
       <EmailSendingModal

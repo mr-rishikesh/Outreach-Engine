@@ -28,6 +28,10 @@ export default function FilterPanel({ filters, onApply, onClear }) {
   const [pinnedKeys, setPinnedKeys] = useState([]);
 
   useEffect(() => {
+    setLocal({ ...filters });
+  }, [filters]);
+
+  useEffect(() => {
     const raw = localStorage.getItem("outreach_crm_saved_filters");
     if (raw) {
       try {
@@ -186,6 +190,32 @@ export default function FilterPanel({ filters, onApply, onClear }) {
 
         <FilterField label="Last Reach Source" name="last_reach_source" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
           <input type="text" value={local.last_reach_source || ""} onChange={(e) => set("last_reach_source", e.target.value)} className={inputClass} placeholder="e.g. Email" />
+        </FilterField>
+      </FilterGroup>
+
+      {/* Firmographics & Target Country */}
+      <FilterGroup icon={<Building2 className="w-4 h-4" />} title="Firmographics & Target Country" cols="grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+        <FilterField label="Company Size" name="employees" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
+          <select value={local.employees || ""} onChange={(e) => set("employees", e.target.value)} className={selectClass}>
+            <option value="">All sizes</option>
+            <option value="1-10">1-10 Employees</option>
+            <option value="11-50">11-50 Employees</option>
+            <option value="51-200">51-200 Employees</option>
+            <option value="201-500">201-500 Employees</option>
+            <option value="500+">500+ Employees</option>
+          </select>
+        </FilterField>
+
+        <FilterField label="Industry Sector" name="industry" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
+          <input type="text" value={local.industry || ""} onChange={(e) => set("industry", e.target.value)} className={inputClass} placeholder="e.g. Technology" />
+        </FilterField>
+
+        <FilterField label="Email Status" name="emailStatus" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
+          <input type="text" value={local.emailStatus || ""} onChange={(e) => set("emailStatus", e.target.value)} className={inputClass} placeholder="e.g. Verified" />
+        </FilterField>
+
+        <FilterField label="Target Country" name="country" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
+          <input type="text" value={local.country || ""} onChange={(e) => set("country", e.target.value)} className={inputClass} placeholder="e.g. United States" />
         </FilterField>
       </FilterGroup>
 

@@ -25,10 +25,10 @@ export const sendEmailsNodemailer = async ({subject , bdy  } , email) => {
   };
   try {
     await transporter.sendMail(mailOptions);
-    return {seccess : true}
+    return { seccess: true }
   } catch (error) {
-    console.log("error wile sending email " , error)
-     return {seccess : false}
+    console.log("error wile sending email ", error)
+    return { seccess: false, error: error.message }
   }
  
 
