@@ -189,24 +189,24 @@ export default function ContactDetail() {
   const c = contact;
 
   const inputClass =
-    "w-full h-10 px-3.5 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 shadow-sm hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all";
+    "w-full h-8 px-3 text-xs bg-white border border-slate-200 rounded placeholder:text-slate-400 hover:border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all font-semibold";
 
   const selectClass =
-    "w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 shadow-sm hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer";
+    "w-full h-8 px-2 text-xs bg-white border border-slate-200 rounded text-slate-700 hover:border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all cursor-pointer font-semibold";
 
-  const labelClass = "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5";
+  const labelClass = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1";
 
   return (
-    <div className="flex flex-col gap-6 lg:gap-8 animate-in fade-in duration-200">
+    <div className="flex flex-col gap-4 animate-in fade-in duration-200">
       {/* Header Card */}
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 lg:p-6">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => navigate("/")}
-              className="p-2 -ml-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 -ml-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition-colors cursor-pointer"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
             </button>
 
             {/* Avatar + Info */}
@@ -228,18 +228,18 @@ export default function ContactDetail() {
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                  <span className="text-lg font-bold text-indigo-600">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100 shadow-sm">
+                  <span className="text-sm font-extrabold text-indigo-600">
                     {(c.firstName?.[0] || "").toUpperCase()}
                     {(c.lastName?.[0] || "").toUpperCase()}
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-xl lg:text-2xl font-bold text-slate-800 truncate">
+                  <h1 className="text-base font-extrabold text-slate-800 truncate tracking-tight">
                     {c.firstName} {c.lastName}
                   </h1>
-                  <p className="text-sm text-slate-500 truncate mt-0.5">
+                  <p className="text-xs text-slate-500 truncate font-semibold mt-0.5">
                     {c.role || c.title}{c.role || c.title ? " at " : ""}{c.companey_name || c.companyName}
                   </p>
                 </div>
@@ -253,7 +253,7 @@ export default function ContactDetail() {
               <select
                 value={editForm.outreachStatus}
                 onChange={(e) => setEditForm(p => ({ ...p, outreachStatus: e.target.value }))}
-                className={`${selectClass} w-44`}
+                className={`${selectClass} w-40`}
               >
                 {OUTREACH_STATUSES.map((s) => (
                   <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
@@ -261,12 +261,12 @@ export default function ContactDetail() {
               </select>
             ) : (
               <>
-                <span className={`inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full ${STATUS_COLORS[c.outreachStatus] || STATUS_COLORS.NOT_SENT}`}>
+                <span className={`inline-flex items-center px-2.5 py-1 text-[10px] font-extrabold tracking-wider uppercase rounded ${STATUS_COLORS[c.outreachStatus] || STATUS_COLORS.NOT_SENT}`}>
                   {(c.outreachStatus || "NOT_SENT").replace(/_/g, " ")}
                 </span>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="inline-flex items-center gap-1.5 h-9 px-4 text-xs font-semibold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 rounded-lg shadow-sm transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1 h-8 px-3 text-xs font-bold border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 rounded shadow-sm transition-all cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
                   Edit Lead
@@ -278,17 +278,17 @@ export default function ContactDetail() {
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Left Column */}
-        <div className="lg:col-span-2 flex flex-col gap-5 lg:gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-4">
           
           {/* Contact Info Card */}
           <Card>
             <CardHeader icon={<User className="w-4 h-4" />} title="Contact & Company Information" />
             
             {isEditing ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
                 <div>
                   <label className={labelClass}>Email Address</label>
                   <input
@@ -354,7 +354,7 @@ export default function ContactDetail() {
                 </div>
                 
                 {/* Location Group */}
-                <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                   <div>
                     <label className={labelClass}>City</label>
                     <input
@@ -385,7 +385,7 @@ export default function ContactDetail() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 mt-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 mt-3.5">
                 <InfoRow icon={<Mail className="w-4 h-4" />} label="Email" value={c.email} />
                 <InfoRow icon={<Phone className="w-4 h-4" />} label="Phone" value={c.phone || c.workDirectPhone || "-"} />
                 <InfoRow icon={<Building2 className="w-4 h-4" />} label="Company" value={c.companey_name || c.companyName} />
@@ -402,7 +402,7 @@ export default function ContactDetail() {
             <CardHeader icon={<Tag className="w-4 h-4" />} title="CRM Properties & Social Handles" />
             
             {isEditing ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
                 <div>
                   <label className={labelClass}>Lead Source</label>
                   <input
@@ -457,7 +457,7 @@ export default function ContactDetail() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 mt-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 mt-3.5">
                 <InfoRow label="Lead Source" value={c.source || "-"} />
                 <InfoRow label="Engagement Rating" value={c.engagement || "Low"} />
                 <InfoRow label="LinkedIn URL" value={c.linkedin || c.personLinkedinUrl} link />
@@ -472,7 +472,7 @@ export default function ContactDetail() {
             <CardHeader icon={<MessageSquare className="w-4 h-4" />} title="Reach Details" />
             
             {isEditing ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
                 <div>
                   <label className={labelClass}>Last Reach Date</label>
                   <input
@@ -498,17 +498,17 @@ export default function ContactDetail() {
                     value={editForm.last_reach_message}
                     onChange={(e) => setEditForm(p => ({ ...p, last_reach_message: e.target.value }))}
                     rows={3}
-                    className="w-full px-3.5 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 resize-none transition-all"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 resize-none transition-all font-semibold"
                   />
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 mt-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 mt-3.5">
                 <InfoRow label="Last Reach Date" value={c.last_reach_date ? new Date(c.last_reach_date).toLocaleDateString() : "-"} />
                 <InfoRow label="Last Reach Source" value={c.last_reach_source || "-"} />
                 <div className="sm:col-span-2">
-                  <p className="text-xs font-medium text-slate-400 mb-1">Last Reach Message Outline</p>
-                  <p className="text-sm text-slate-700 bg-slate-50 border border-slate-100 rounded-xl p-3">{c.last_reach_message || "No reach logs recorded"}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Last Reach Message Outline</p>
+                  <p className="text-xs text-slate-700 bg-slate-50 border border-slate-100 rounded p-2.5 font-medium">{c.last_reach_message || "No reach logs recorded"}</p>
                 </div>
               </div>
             )}
@@ -552,34 +552,34 @@ export default function ContactDetail() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="flex flex-col gap-5 lg:gap-6">
+        <div className="flex flex-col gap-4">
           
           {/* Actions / Editing Controls Card */}
           <Card>
             <CardHeader title={isEditing ? "Editing Lead Properties" : "Outreach Actions"} />
-            <div className="mt-5 space-y-3">
+            <div className="mt-3.5 space-y-2">
               {isEditing ? (
                 <>
                   <button
                     onClick={handleSaveAll}
                     disabled={saving}
-                    className="w-full inline-flex items-center justify-center gap-2 h-11 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-1.5 h-8 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
                   >
                     {saving ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         Saving...
                       </>
                     ) : (
                       <>
-                        <Save className="w-4 h-4" />
+                        <Save className="w-3.5 h-3.5" />
                         Save Changes
                       </>
                     )}
                   </button>
                   <button
                     onClick={() => { setIsEditing(false); loadContact(); }}
-                    className="w-full inline-flex items-center justify-center gap-2 h-11 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 transition-all cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-1.5 h-8 border border-slate-200 text-slate-600 text-xs font-bold rounded hover:bg-slate-50 transition-all cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -589,17 +589,17 @@ export default function ContactDetail() {
                   <button
                     onClick={handleSendEmail}
                     disabled={sending || c.flags?.doNotContact}
-                    className="w-full inline-flex items-center justify-center gap-2 h-11 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-1.5 h-8 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-3.5 h-3.5" />
                     {sending ? "Sending..." : "Send Email"}
                   </button>
                   <button
                     onClick={handleSendFollowup}
                     disabled={sending || c.flags?.doNotContact}
-                    className="w-full inline-flex items-center justify-center gap-2 h-11 border border-indigo-200 text-indigo-600 text-sm font-medium rounded-xl hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-1.5 h-8 border border-indigo-200 text-indigo-600 text-xs font-bold rounded hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
                   >
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className="w-3.5 h-3.5" />
                     {sending ? "Sending..." : "Send Follow-up"}
                   </button>
                 </>
@@ -610,17 +610,17 @@ export default function ContactDetail() {
           {/* Status & Tracking Card */}
           <Card>
             <CardHeader title="Outreach Metrics" />
-            <div className="mt-5 space-y-5">
+            <div className="mt-3.5 space-y-3.5">
               {!isEditing && (
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Outreach Status</label>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Outreach Status</label>
                   <select
                     value={status}
                     onChange={(e) => {
                       setStatus(e.target.value);
                       api.updateContact(id, { outreachStatus: e.target.value }).then(loadContact).catch(toast.error);
                     }}
-                    className="w-full h-10 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all cursor-pointer text-slate-800 font-medium"
+                    className="w-full h-8 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all cursor-pointer text-slate-800 font-semibold"
                   >
                     {OUTREACH_STATUSES.map((s) => (
                       <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
@@ -630,7 +630,7 @@ export default function ContactDetail() {
               )}
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <StatBox label="Emails Sent" value={c.emailStats?.emailsSent || 0} />
                 <StatBox label="Followups" value={`${c.followup?.followupCount || 0}/${c.followup?.maxFollowups || 3}`} />
                 <StatBox label="Opened" value={c.emailStats?.opened ? "Yes" : "No"} />
@@ -639,17 +639,62 @@ export default function ContactDetail() {
 
               {/* Flags */}
               {(c.flags?.doNotContact || c.flags?.bounced || c.flags?.unsubscribe) && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {c.flags?.doNotContact && (
-                    <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20">Do Not Contact</span>
+                    <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded bg-red-50 text-red-700 border border-red-200">Do Not Contact</span>
                   )}
                   {c.flags?.bounced && (
-                    <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-600/20">Bounced</span>
+                    <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded bg-orange-50 text-orange-700 border border-orange-200">Bounced</span>
                   )}
                   {c.flags?.unsubscribe && (
-                    <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20">Unsubscribed</span>
+                    <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded bg-amber-50 text-amber-700 border border-amber-200">Unsubscribed</span>
                   )}
                 </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Sequence Scheduling Card */}
+          <Card>
+            <CardHeader title="Sequence Scheduling" />
+            <div className="mt-3.5 space-y-3">
+              {c.sequence_id || c.batch_id || c.next_send_date ? (
+                <>
+                  {c.sequence_id && (
+                    <InfoRow
+                      label="Sequence Template"
+                      value={c.sequence_id.name || "Unnamed Sequence"}
+                    />
+                  )}
+                  {c.batch_id && (
+                    <InfoRow
+                      label="Scheduled Batch"
+                      value={c.batch_id.name || `Batch - ${new Date(c.batch_id.email_send_date).toLocaleDateString()}`}
+                    />
+                  )}
+                  {c.next_send_date && (
+                    <InfoRow
+                      label="Next Send Date"
+                      value={new Date(c.next_send_date).toLocaleDateString()}
+                    />
+                  )}
+                  {c.next_send_type && (
+                    <div className="flex items-start gap-2.5">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Next Send Type</p>
+                        <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded capitalize border ${
+                          c.next_send_type === "email"
+                            ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}>
+                          {c.next_send_type === "email" ? "Primary Email" : "Follow-up Email"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-slate-400 italic py-1">Not enrolled in any scheduled sequence batch.</p>
               )}
             </div>
           </Card>
@@ -657,20 +702,20 @@ export default function ContactDetail() {
           {/* Notes Card */}
           <Card>
             <CardHeader title="Notes Log" />
-            <div className="mt-5 space-y-3">
+            <div className="mt-3.5 space-y-2">
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={5}
-                className="w-full px-3.5 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 resize-none transition-all"
+                rows={4}
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 resize-none transition-all font-semibold"
                 placeholder="Add notes about this contact..."
               />
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full inline-flex items-center justify-center gap-2 h-10 bg-slate-800 text-white text-sm font-medium rounded-xl hover:bg-slate-900 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-1.5 h-8 bg-slate-800 text-white text-xs font-bold rounded hover:bg-slate-900 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-3.5 h-3.5" />
                 {saving ? "Saving..." : "Save Notes"}
               </button>
             </div>
@@ -694,7 +739,7 @@ export default function ContactDetail() {
 
 function Card({ children }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 lg:p-6">
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
       {children}
     </div>
   );
@@ -702,41 +747,41 @@ function Card({ children }) {
 
 function CardHeader({ icon, title }) {
   return (
-    <div className="flex items-center gap-2.5">
-      {icon && <span className="text-indigo-500">{icon}</span>}
-      <h2 className="text-sm font-semibold text-slate-800 tracking-tight">{title}</h2>
+    <div className="flex items-center gap-2 border-b border-slate-100 pb-2 mb-3">
+      {icon && <span className="text-slate-400">{icon}</span>}
+      <h2 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">{title}</h2>
     </div>
   );
 }
 
 function StatBox({ label, value }) {
   return (
-    <div className="bg-slate-50 rounded-xl border border-slate-100 p-3.5 text-center">
-      <p className="text-xs font-medium text-slate-500 mb-1">{label}</p>
-      <p className="text-lg font-bold text-slate-800 tracking-tight">{value}</p>
+    <div className="bg-slate-50 rounded border border-slate-200/60 p-2 text-center">
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-sm font-extrabold text-slate-800 tracking-tight">{value}</p>
     </div>
   );
 }
 
 function InfoRow({ icon, label, value, link }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-2.5">
       {icon && (
         <span className="text-slate-400 mt-0.5 shrink-0">{icon}</span>
       )}
       <div className="min-w-0">
-        <p className="text-xs font-medium text-slate-400 mb-0.5">{label}</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
         {link && value && value !== "-" ? (
           <a
             href={value.startsWith("http") ? value : `https://${value}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-indigo-600 hover:text-indigo-700 hover:underline break-all transition-colors"
+            className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline break-all transition-colors font-semibold"
           >
             {value}
           </a>
         ) : (
-          <p className="text-sm text-slate-700 break-all">{value || "-"}</p>
+          <p className="text-xs text-slate-700 font-semibold break-all">{value || "-"}</p>
         )}
       </div>
     </div>

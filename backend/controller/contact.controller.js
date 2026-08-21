@@ -62,6 +62,7 @@ export const getContacts = async (req, res) => {
     // Search by name, email, or company
     if (search) {
       query.$or = [
+        { leadId: { $regex: search, $options: "i" } },
         { firstName: { $regex: search, $options: "i" } },
         { lastName: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
@@ -144,12 +145,17 @@ export const filterContacts = async (req, res) => {
       last_reach_source,
       lastReachDateFrom,
       lastReachDateTo,
+      employees,
+      industry,
+      emailStatus,
+      country,
     } = req.query;
 
     const query = {};
 
     if (search) {
       query.$or = [
+        { leadId: { $regex: search, $options: "i" } },
         { firstName: { $regex: search, $options: "i" } },
         { lastName: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
@@ -238,6 +244,53 @@ export const filterContacts = async (req, res) => {
       if (dateTo) query.createdAt.$lte = new Date(dateTo);
     }
 
+    if (industry) {
+      query.industry = { $regex: industry, $options: "i" };
+    }
+
+    if (emailStatus) {
+      query.emailStatus = { $regex: emailStatus, $options: "i" };
+    }
+
+    if (country) {
+      query.country = { $regex: country, $options: "i" };
+    }
+
+    if (employees) {
+      if (employees === "500+") {
+        query.$expr = {
+          $gte: [
+            { $convert: { input: "$employees", to: "int", onError: -1, onNull: -1 } },
+            501
+          ]
+        };
+      } else {
+        const parts = employees.split("-");
+        if (parts.length === 2) {
+          const min = parseInt(parts[0]);
+          const max = parseInt(parts[1]);
+          if (!isNaN(min) && !isNaN(max)) {
+            query.$expr = {
+              $and: [
+                {
+                  $gte: [
+                    { $convert: { input: "$employees", to: "int", onError: -1, onNull: -1 } },
+                    min
+                  ]
+                },
+                {
+                  $lte: [
+                    { $convert: { input: "$employees", to: "int", onError: -1, onNull: -1 } },
+                    max
+                  ]
+                }
+              ]
+            };
+          }
+        }
+      }
+    }
+
     const { purpose, excludeSequence, excludeRecent } = req.query;
 
     if (purpose) {
@@ -304,7 +357,10 @@ export const filterContacts = async (req, res) => {
 // GET /api/contacts/:id
 export const getContactById = async (req, res) => {
   try {
-    const contact = await Contact.findById(req.params.id).lean();
+    const contact = await Contact.findById(req.params.id)
+      .populate("sequence_id")
+      .populate("batch_id")
+      .lean();
     if (!contact) {
       return res.status(404).json({ success: false, error: "Contact not found" });
     }
@@ -365,6 +421,13 @@ export const getContactStats = async (req, res) => {
       repliedCount,
       bouncedCount,
       doNotContactCount,
+      industries,
+      employeeCounts,
+      trendCounts,
+      purposeCounts,
+      engagementCounts,
+      emailStatusCounts,
+      countryCounts,
     ] = await Promise.all([
       Contact.countDocuments(),
       Contact.aggregate([
@@ -373,11 +436,76 @@ export const getContactStats = async (req, res) => {
       Contact.countDocuments({ "reply.replied": true }),
       Contact.countDocuments({ "flags.bounced": true }),
       Contact.countDocuments({ "flags.doNotContact": true }),
+      Contact.aggregate([
+        { $group: { _id: "$industry", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 8 }
+      ]),
+      Contact.aggregate([
+        { $group: { _id: "$employees", count: { $sum: 1 } } }
+      ]),
+      Contact.aggregate([
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } },
+        { $limit: 12 }
+      ]),
+      Contact.aggregate([
+        { $group: { _id: "$purpose", count: { $sum: 1 } } }
+      ]),
+      Contact.aggregate([
+        { $group: { _id: "$engagement", count: { $sum: 1 } } }
+      ]),
+      Contact.aggregate([
+        { $group: { _id: "$emailStatus", count: { $sum: 1 } } }
+      ]),
+      Contact.aggregate([
+        { $group: { _id: "$country", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 6 }
+      ])
     ]);
 
     const statusMap = {};
     statusCounts.forEach((s) => {
-      statusMap[s._id || "NOT_SET"] = s.count;
+      statusMap[s._id || "NOT_SENT"] = s.count;
+    });
+
+    const purposeMap = {};
+    purposeCounts.forEach((p) => {
+      purposeMap[p._id || "apply"] = p.count;
+    });
+
+    const engagementMap = {};
+    engagementCounts.forEach((e) => {
+      engagementMap[e._id || "Low"] = e.count;
+    });
+
+    const emailStatusMap = {};
+    emailStatusCounts.forEach((es) => {
+      emailStatusMap[es._id || "Unknown"] = es.count;
+    });
+
+    // Categorize employee counts in Node.js
+    const employeeCategories = {
+      "1-10": 0,
+      "11-50": 0,
+      "51-200": 0,
+      "201-500": 0,
+      "500+": 0,
+    };
+    employeeCounts.forEach((e) => {
+      const val = parseInt(e._id);
+      if (isNaN(val)) return;
+      if (val <= 10) employeeCategories["1-10"] += e.count;
+      else if (val <= 50) employeeCategories["11-50"] += e.count;
+      else if (val <= 200) employeeCategories["51-200"] += e.count;
+      else if (val <= 500) employeeCategories["201-500"] += e.count;
+      else employeeCategories["500+"] += e.count;
     });
 
     res.json({
@@ -388,6 +516,13 @@ export const getContactStats = async (req, res) => {
         replied: repliedCount,
         bounced: bouncedCount,
         doNotContact: doNotContactCount,
+        industries: industries.map(ind => ({ name: ind._id || "Unknown", count: ind.count })),
+        employeeBreakdown: employeeCategories,
+        trend: trendCounts.map(t => ({ date: t._id, count: t.count })),
+        purposeBreakdown: purposeMap,
+        engagementBreakdown: engagementMap,
+        emailStatusBreakdown: emailStatusMap,
+        countryBreakdown: countryCounts.map(c => ({ name: c._id || "Unknown", count: c.count }))
       },
     });
   } catch (error) {

@@ -1,5 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || "";
-const BASE = `${API_URL}/api/contacts`;
+const PORT = import.meta.env.VITE_PORT || "5000";
+const BASE_URL = `http://localhost:${PORT}`;
+const BASE = `${BASE_URL}/api/contacts`;
 
 async function request(url, options = {}) {
   const res = await fetch(url, {
@@ -62,7 +63,7 @@ export const api = {
     if (purpose) {
       formData.append("purpose", purpose);
     }
-    const res = await fetch(`${API_URL}/upload`, {
+    const res = await fetch(`${BASE_URL}/upload`, {
       method: "POST",
       body: formData,
     });
@@ -72,7 +73,7 @@ export const api = {
   },
 
   searchApolloLeads: async (params) => {
-    const res = await fetch(`${API_URL}/api/apollo/search`, {
+    const res = await fetch(`${BASE_URL}/api/apollo/search`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
@@ -83,7 +84,7 @@ export const api = {
   },
 
   importApolloLeads: async (leads) => {
-    const res = await fetch(`${API_URL}/api/apollo/import`, {
+    const res = await fetch(`${BASE_URL}/api/apollo/import`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ leads }),
@@ -93,38 +94,54 @@ export const api = {
     return data;
   },
 
-  getSequences: () => request(`${API_URL}/api/sequences`),
-  getSequence: (id) => request(`${API_URL}/api/sequences/${id}`),
-  createSequence: (data) => request(`${API_URL}/api/sequences`, {
+  getSequences: () => request(`${BASE_URL}/api/sequences`),
+  getSequence: (id) => request(`${BASE_URL}/api/sequences/${id}`),
+  createSequence: (data) => request(`${BASE_URL}/api/sequences`, {
     method: "POST",
     body: JSON.stringify(data)
   }),
-  updateSequence: (id, data) => request(`${API_URL}/api/sequences/${id}`, {
+  updateSequence: (id, data) => request(`${BASE_URL}/api/sequences/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data)
   }),
-  deleteSequence: (id) => request(`${API_URL}/api/sequences/${id}`, {
+  deleteSequence: (id) => request(`${BASE_URL}/api/sequences/${id}`, {
     method: "DELETE"
   }),
-  manageSequenceContacts: (id, payload) => request(`${API_URL}/api/sequences/${id}/contacts`, {
+  manageSequenceContacts: (id, payload) => request(`${BASE_URL}/api/sequences/${id}/contacts`, {
     method: "POST",
     body: JSON.stringify(payload)
   }),
-  runSequence: (id, payload) => request(`${API_URL}/api/sequences/${id}/run`, {
-    method: "POST",
-    body: payload ? JSON.stringify(payload) : undefined
+  runSequence: (id) => request(`${BASE_URL}/api/sequences/${id}/run`, {
+    method: "POST"
   }),
-  getEligibleContacts: (id, params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return request(`${API_URL}/api/sequences/${id}/eligible?${qs}`);
-  },
-  sendSingleSequenceEmail: (id, payload) => request(`${API_URL}/api/sequences/${id}/send-single`, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  }),
-  getSettings: () => request(`${API_URL}/api/settings`),
-  updateSettings: (data) => request(`${API_URL}/api/settings`, {
+  getSettings: () => request(`${BASE_URL}/api/settings`),
+  updateSettings: (data) => request(`${BASE_URL}/api/settings`, {
     method: "PUT",
     body: JSON.stringify(data)
+  }),
+  getCompanies: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`${BASE_URL}/api/companies?${qs}`);
+  },
+  getCompany: (id) => request(`${BASE_URL}/api/companies/${id}`),
+  updateCompany: (id, data) => request(`${BASE_URL}/api/companies/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data)
+  }),
+  getCompanyStats: () => request(`${BASE_URL}/api/companies/stats`),
+  createBatch: (data) => request(`${BASE_URL}/api/batches`, {
+    method: "POST",
+    body: JSON.stringify(data)
+  }),
+  getSequenceBatches: (sequenceId) => request(`${BASE_URL}/api/batches/sequence/${sequenceId}`),
+  updateBatch: (id, data) => request(`${BASE_URL}/api/batches/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data)
+  }),
+  deleteBatch: (id) => request(`${BASE_URL}/api/batches/${id}`, {
+    method: "DELETE"
+  }),
+  runSchedulerManual: () => request(`${BASE_URL}/api/batches/scheduler/run`, {
+    method: "POST"
   }),
 };

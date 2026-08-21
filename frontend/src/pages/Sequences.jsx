@@ -2,38 +2,49 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import {
-  Play, Pause, Square, Mail, Users, Edit3, Trash2, Plus, 
-  ChevronRight, RefreshCw, X, Check, AlertCircle, Loader2, ArrowRight
+  Play, Pause, Mail, Users, Edit3, Trash2, Plus, 
+  ChevronRight, RefreshCw, X, Check, Loader2, ArrowRight, Calendar
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { useWorker } from "../context/WorkerContext";
 
 export default function Sequences() {
   const [sequences, setSequences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSequence, setSelectedSequence] = useState(null);
-
-  // Detail view edit states
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({});
+
+  // Batch states
+  const [batches, setBatches] = useState([]);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [editingBatch, setEditingBatch] = useState(null);
+  const [batchForm, setBatchForm] = useState({
+    name: "",
+    email_send_date: "",
+    follow_up_dates: [],
+    contactIds: []
+  });
+  const [allContacts, setAllContacts] = useState([]);
+  const [searchContact, setSearchContact] = useState("");
 
   const loadSequences = async () => {
     setLoading(true);
     try {
       const res = await api.getSequences();
       setSequences(res.data || []);
-      // If a sequence is selected, update it in detail view too
+      // Refresh current selection if any
       if (selectedSequence) {
         const updated = res.data.find(s => s._id === selectedSequence._id);
         if (updated) {
-          // Fetch populated contact details
-          const detailRes = await api.getSequence(updated._id);
-          setSelectedSequence(detailRes.data);
+          setSelectedSequence(updated);
+          setEditForm(updated);
+          const batchRes = await api.getSequenceBatches(updated._id);
+          setBatches(batchRes.data || []);
         }
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load sequences.");
+      toast.error("Failed to load sequence templates.");
     } finally {
       setLoading(false);
     }
@@ -46,54 +57,40 @@ export default function Sequences() {
   const handleStatusChange = async (seqId, newStatus) => {
     try {
       await api.updateSequence(seqId, { status: newStatus });
-      toast.success(`Sequence status updated to ${newStatus}`);
+      toast.success(`Sequence template status updated to ${newStatus}`);
       loadSequences();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to update status.");
+      toast.error("Failed to update template status.");
     }
   };
 
   const handleDelete = async (seqId) => {
-    if (!confirm("Are you sure you want to delete this sequence? This cannot be undone.")) return;
+    if (!confirm("Are you sure you want to delete this sequence template? This will delete all associated batches and unschedule contacts.")) return;
     try {
       await api.deleteSequence(seqId);
-      toast.success("Sequence deleted");
-      if (selectedSequence?._id === seqId) setSelectedSequence(null);
+      toast.success("Sequence template deleted");
+      if (selectedSequence?._id === seqId) {
+        setSelectedSequence(null);
+        setBatches([]);
+      }
       loadSequences();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to delete sequence.");
+      toast.error("Failed to delete sequence template.");
     }
   };
 
   const handleSelectSequence = async (seq) => {
     setEditMode(false);
+    setSelectedSequence(seq);
+    setEditForm(seq);
     try {
-      const res = await api.getSequence(seq._id);
-      setSelectedSequence(res.data);
-      setEditForm(res.data);
+      const batchRes = await api.getSequenceBatches(seq._id);
+      setBatches(batchRes.data || []);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load sequence details.");
-    }
-  };
-
-  const handleRemoveContact = async (seqId, contactId) => {
-    if (!confirm("Remove this contact from the sequence?")) return;
-    try {
-      await api.manageSequenceContacts(seqId, {
-        action: "remove",
-        contactId
-      });
-      toast.success("Contact removed from sequence.");
-      // Refresh sequence detail
-      const res = await api.getSequence(seqId);
-      setSelectedSequence(res.data);
-      loadSequences();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to remove contact.");
+      toast.error("Failed to load batches for sequence.");
     }
   };
 
@@ -101,6 +98,7 @@ export default function Sequences() {
     try {
       await api.updateSequence(selectedSequence._id, {
         name: editForm.name,
+        subject: editForm.subject,
         greeting: editForm.greeting,
         body: editForm.body,
         signature: editForm.signature,
@@ -110,20 +108,121 @@ export default function Sequences() {
         followupDays: Number(editForm.followupDays),
         maxFollowups: Number(editForm.maxFollowups)
       });
-      toast.success("Templates updated successfully!");
+      toast.success("Sequence template updated successfully!");
       setEditMode(false);
-      // Reload sequence detail
-      const res = await api.getSequence(selectedSequence._id);
-      setSelectedSequence(res.data);
       loadSequences();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save changes.");
+      toast.error("Failed to save sequence templates.");
     }
   };
 
-  const { status: workerStatus, startSending } = useWorker();
-  const isSendingActive = workerStatus === "running";
+  // Contacts picker for Batch scheduling
+  const loadContactsForBatch = async (currBatchContactIds = []) => {
+    try {
+      const res = await api.filterContacts({ limit: 1000 });
+      // Include contacts who are not in any batch OR are currently inside this editing batch
+      const filtered = (res.data || []).filter(c => {
+        return !c.batch_id || currBatchContactIds.includes(c._id.toString());
+      });
+      setAllContacts(filtered);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load contacts for scheduling.");
+    }
+  };
+
+  const handleOpenCreateBatch = () => {
+    setEditingBatch(null);
+    setBatchForm({
+      name: "",
+      email_send_date: new Date().toISOString().split("T")[0],
+      follow_up_dates: [],
+      contactIds: []
+    });
+    setSearchContact("");
+    loadContactsForBatch([]);
+    setShowBatchModal(true);
+  };
+
+  const handleOpenEditBatch = (batch) => {
+    setEditingBatch(batch);
+    setBatchForm({
+      name: batch.name || "",
+      email_send_date: batch.email_send_date ? new Date(batch.email_send_date).toISOString().split("T")[0] : "",
+      follow_up_dates: (batch.follow_up_dates || []).map(d => new Date(d).toISOString().split("T")[0]),
+      contactIds: (batch.contacts || []).map(c => c._id || c)
+    });
+    setSearchContact("");
+    loadContactsForBatch((batch.contacts || []).map(c => (c._id || c).toString()));
+    setShowBatchModal(true);
+  };
+
+  const handleSaveBatch = async () => {
+    if (!batchForm.email_send_date) {
+      toast.error("Email send date is required.");
+      return;
+    }
+    if (batchForm.contactIds.length === 0) {
+      toast.error("Please select at least one contact for this batch.");
+      return;
+    }
+
+    try {
+      if (editingBatch) {
+        await api.updateBatch(editingBatch._id, {
+          name: batchForm.name,
+          contacts: batchForm.contactIds,
+          email_send_date: batchForm.email_send_date,
+          follow_up_dates: batchForm.follow_up_dates,
+        });
+        toast.success("Batch updated successfully!");
+      } else {
+        await api.createBatch({
+          name: batchForm.name,
+          sequence_id: selectedSequence._id,
+          contactIds: batchForm.contactIds,
+          email_send_date: batchForm.email_send_date,
+          follow_up_dates: batchForm.follow_up_dates,
+        });
+        toast.success("Batch created and scheduled successfully!");
+      }
+      setShowBatchModal(false);
+      loadSequences();
+      const batchRes = await api.getSequenceBatches(selectedSequence._id);
+      setBatches(batchRes.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save batch: " + err.message);
+    }
+  };
+
+  const handleDeleteBatch = async (batchId) => {
+    if (!confirm("Are you sure you want to delete this scheduled batch? All contacts inside will be detached.")) return;
+    try {
+      await api.deleteBatch(batchId);
+      toast.success("Batch deleted successfully!");
+      loadSequences();
+      const batchRes = await api.getSequenceBatches(selectedSequence._id);
+      setBatches(batchRes.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete batch: " + err.message);
+    }
+  };
+
+  const handleToggleBatchStatus = async (batch) => {
+    const newStatus = batch.status === "active" ? "paused" : "active";
+    try {
+      await api.updateBatch(batch._id, { status: newStatus });
+      toast.success(`Batch status updated to ${newStatus}`);
+      const batchRes = await api.getSequenceBatches(selectedSequence._id);
+      setBatches(batchRes.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update batch status: " + err.message);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -134,13 +233,39 @@ export default function Sequences() {
           <p className="text-sm text-slate-500">Create, run, and monitor multi-step automated email campaigns</p>
         </div>
 
-        <Link
-          to="/sequences/new"
-          className="inline-flex items-center gap-2 h-10 px-4 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-sm cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Sequence</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              const confirmRun = confirm("Trigger the daily outreach sending process right now? This will immediately process and send emails for contacts scheduled today or earlier.");
+              if (!confirmRun) return;
+              toast.loading("Running daily outreach process...", { id: "scheduler-run" });
+              try {
+                await api.runSchedulerManual();
+                toast.success("Daily sending process completed successfully!", { id: "scheduler-run" });
+                loadSequences();
+                if (selectedSequence) {
+                  const batchRes = await api.getSequenceBatches(selectedSequence._id);
+                  setBatches(batchRes.data || []);
+                }
+              } catch (err) {
+                console.error(err);
+                toast.error("Failed to run daily sending: " + err.message, { id: "scheduler-run" });
+              }
+            }}
+            className="inline-flex items-center gap-1.5 h-10 px-4 text-xs font-bold rounded-lg border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all shadow-sm cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4 shrink-0" />
+            <span>Trigger Scheduler Run</span>
+          </button>
+
+          <Link
+            to="/sequences/new"
+            className="inline-flex items-center gap-2 h-10 px-4 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-sm cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Sequence Template</span>
+          </Link>
+        </div>
       </div>
 
       {/* Main Grid */}
@@ -149,7 +274,7 @@ export default function Sequences() {
         <div className="lg:col-span-2 space-y-4">
           {loading && sequences.length === 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 p-10 text-center italic text-slate-500">
-              Loading email sequences...
+              Loading email templates...
             </div>
           ) : sequences.length === 0 ? (
             <div className="bg-white rounded-xl border border-slate-200/80 p-10 text-center shadow-sm">
@@ -185,17 +310,11 @@ export default function Sequences() {
                           <h3 className="font-bold text-slate-800 text-sm leading-snug line-clamp-1">
                             {seq.name}
                           </h3>
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded inline-block">
-                              {seq.type === "direct_apply" ? "Direct Apply" : "Referral"}
-                            </span>
-                            <span className="text-[10px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded inline-block">
-                              Last Sent: {seq.lastSentDate ? new Date(seq.lastSentDate).toLocaleDateString() : "Never"}
-                            </span>
-                          </div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded mt-1 inline-block">
+                            {seq.type === "direct_apply" ? "Direct Apply" : "Referral"}
+                          </span>
                         </div>
 
-                        {/* Status Badge */}
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize select-none ${
                           seq.status === "active"
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
@@ -243,48 +362,18 @@ export default function Sequences() {
                           <button
                             onClick={() => handleStatusChange(seq._id, "paused")}
                             className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition-colors cursor-pointer"
-                            title="Pause / Temp Stop"
+                            title="Pause Sequence"
                           >
                             <Pause className="w-3.5 h-3.5 fill-amber-700" />
-                          </button>
-                        )}
-                        
-                        {seq.status !== "stopped" && (
-                          <button
-                            onClick={() => handleStatusChange(seq._id, "stopped")}
-                            className="p-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors cursor-pointer"
-                            title="Stop / Permanent Stop"
-                          >
-                            <Square className="w-3.5 h-3.5 fill-red-700" />
                           </button>
                         )}
                       </div>
 
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => startSending(seq._id, seq.name, "primary")}
-                          disabled={seq.status !== "active" || isSendingActive}
-                          className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
-                          title="Send Primary Mail"
-                        >
-                          <Mail className="w-3 h-3" />
-                          Send Mail
-                        </button>
-
-                        <button
-                          onClick={() => startSending(seq._id, seq.name, "followup")}
-                          disabled={seq.status !== "active" || isSendingActive}
-                          className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
-                          title="Send Follow-up Mail"
-                        >
-                          <ArrowRight className="w-3 h-3" />
-                          Send Follow-up
-                        </button>
-
-                        <button
                           onClick={() => handleDelete(seq._id)}
                           className="p-1.5 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg border border-slate-100 transition-colors cursor-pointer"
-                          title="Delete Campaign"
+                          title="Delete Template"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -325,7 +414,7 @@ export default function Sequences() {
                       !editMode ? "bg-white text-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
                     }`}
                   >
-                    Target Contacts
+                    Scheduled Batches
                   </button>
                   <button
                     onClick={() => setEditMode(true)}
@@ -333,76 +422,109 @@ export default function Sequences() {
                       editMode ? "bg-white text-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
                     }`}
                   >
-                    Edit Templates
+                    Edit Template
                   </button>
                 </div>
 
-                {/* TARGET CONTACTS VIEW */}
+                {/* TARGET BATCHES VIEW */}
                 {!editMode && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Contacts ({selectedSequence.contacts.length})</span>
-                    </div>
+                    <button
+                      onClick={handleOpenCreateBatch}
+                      className="w-full py-2 border border-dashed border-indigo-300 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Schedule New Batch</span>
+                    </button>
 
-                    <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                      {selectedSequence.contacts.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic text-center py-5">No contacts in this sequence.</p>
+                    <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                      {batches.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic text-center py-5">No batches scheduled yet.</p>
                       ) : (
-                        selectedSequence.contacts.map((sc) => {
-                          const contact = sc.contactId;
-                          if (!contact) return null;
-                          return (
-                            <div
-                              key={sc._id}
-                              className={`p-3 border rounded-xl flex items-center justify-between gap-3 text-xs shadow-sm bg-white ${
-                                sc.status === "removed" ? "border-slate-100 opacity-60 bg-slate-50" : "border-slate-200/80"
-                              }`}
-                            >
-                              <div className="min-w-0">
-                                <p className="font-semibold text-slate-800 truncate">
-                                  {contact.firstName} {contact.lastName}
+                        batches.map((b) => (
+                          <div
+                            key={b._id}
+                            className={`p-3.5 border rounded-lg flex flex-col gap-2.5 text-xs shadow-sm bg-white ${
+                              b.status === "paused" ? "border-slate-150 opacity-70 bg-slate-50/50" : "border-slate-200"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="font-bold text-slate-800 flex items-center gap-1">
+                                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                  <span>{b.name || `Batch - ${new Date(b.email_send_date).toLocaleDateString()}`}</span>
                                 </p>
-                                <p className="text-slate-400 text-[10px] mt-0.5 truncate">{contact.email}</p>
-                                <div className="flex items-center gap-1.5 mt-1.5">
-                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded capitalize ${
-                                    sc.status === "pending"
-                                      ? "bg-slate-100 text-slate-600 border border-slate-200"
-                                      : sc.status === "sent"
-                                      ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
-                                      : sc.status === "followup_pending"
-                                      ? "bg-amber-50 text-amber-700 border border-amber-100"
-                                      : sc.status === "replied"
-                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                      : "bg-red-50 text-red-700 border border-red-100"
-                                  }`}>
-                                    {sc.status.replace(/_/g, " ")}
-                                  </span>
-                                  {sc.lastSentDate && (
-                                    <span className="text-[9px] text-slate-400">
-                                      Sent: {new Date(sc.lastSentDate).toLocaleDateString()}
-                                    </span>
-                                  )}
-                                </div>
+                                <p className="text-slate-400 text-[10px] font-semibold mt-0.5">
+                                  Contacts: <span className="text-slate-600 font-bold">{b.contacts?.length || 0}</span>
+                                </p>
                               </div>
 
-                              {sc.status !== "removed" && (
-                                <button
-                                  onClick={() => handleRemoveContact(selectedSequence._id, contact._id)}
-                                  className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer border border-transparent hover:border-red-100"
-                                  title="Remove from sequence"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              )}
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase select-none ${
+                                b.status === "active"
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                  : "bg-amber-50 text-amber-700 border border-amber-100"
+                              }`}>
+                                {b.status}
+                              </span>
                             </div>
-                          );
-                        })
+
+                            {/* Followups timeline */}
+                            {b.follow_up_dates && b.follow_up_dates.length > 0 && (
+                              <div className="bg-slate-50/80 p-2 rounded border border-slate-100 text-[10px] text-slate-500 font-medium">
+                                <span className="font-bold text-slate-400 uppercase tracking-wider block mb-1">Follow-ups:</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {b.follow_up_dates.map((d, i) => (
+                                    <span key={i} className="bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono">
+                                      #{i+1}: {new Date(d).toLocaleDateString()}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Batch Action Toolbar */}
+                            <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1">
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleToggleBatchStatus(b)}
+                                  className={`p-1.5 rounded transition-all cursor-pointer ${
+                                    b.status === "active"
+                                      ? "bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200/40"
+                                      : "bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200/40"
+                                  }`}
+                                  title={b.status === "active" ? "Pause Batch" : "Resume Batch"}
+                                >
+                                  {b.status === "active" ? (
+                                    <Pause className="w-3.5 h-3.5 fill-amber-600" />
+                                  ) : (
+                                    <Play className="w-3.5 h-3.5 fill-emerald-600" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleOpenEditBatch(b)}
+                                  className="p-1.5 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded border border-slate-200/60 transition-all cursor-pointer"
+                                  title="Edit Dates / Contacts"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              <button
+                                onClick={() => handleDeleteBatch(b._id)}
+                                className="p-1.5 bg-slate-50 hover:bg-red-50 hover:text-red-600 rounded border border-slate-200/60 transition-all cursor-pointer"
+                                title="Delete Batch"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* EDIT TEMPLATES VIEW */}
+                {/* EDIT TEMPLATE VIEW */}
                 {editMode && (
                   <div className="space-y-4 text-xs">
                     <div>
@@ -411,7 +533,17 @@ export default function Sequences() {
                         type="text"
                         value={editForm.name || ""}
                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                        className="w-full h-9 px-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full h-9 px-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-600 mb-1">Email Subject Line</label>
+                      <input
+                        type="text"
+                        value={editForm.subject || ""}
+                        onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })}
+                        className="w-full h-9 px-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
                       />
                     </div>
 
@@ -431,7 +563,7 @@ export default function Sequences() {
                         value={editForm.body || ""}
                         onChange={(e) => setEditForm({ ...editForm, body: e.target.value })}
                         rows={6}
-                        className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
                       />
                     </div>
 
@@ -446,7 +578,7 @@ export default function Sequences() {
                     </div>
 
                     <div className="pt-3 border-t border-slate-100 space-y-4">
-                      <h4 className="font-bold text-slate-700">Follow-up Template</h4>
+                      <h4 className="font-bold text-slate-700 uppercase tracking-wide">Follow-up Template</h4>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -455,7 +587,7 @@ export default function Sequences() {
                             type="number"
                             value={editForm.followupDays || 3}
                             onChange={(e) => setEditForm({ ...editForm, followupDays: e.target.value })}
-                            className="w-full h-9 px-3 border border-slate-200 rounded-lg"
+                            className="w-full h-9 px-3 border border-slate-200 rounded-lg font-semibold"
                           />
                         </div>
                         <div>
@@ -464,7 +596,7 @@ export default function Sequences() {
                             type="number"
                             value={editForm.maxFollowups || 1}
                             onChange={(e) => setEditForm({ ...editForm, maxFollowups: e.target.value })}
-                            className="w-full h-9 px-3 border border-slate-200 rounded-lg"
+                            className="w-full h-9 px-3 border border-slate-200 rounded-lg font-semibold"
                           />
                         </div>
                       </div>
@@ -485,7 +617,7 @@ export default function Sequences() {
                           value={editForm.followupBody || ""}
                           onChange={(e) => setEditForm({ ...editForm, followupBody: e.target.value })}
                           rows={4}
-                          className="w-full p-3 border border-slate-200 rounded-lg"
+                          className="w-full p-3 border border-slate-200 rounded-lg font-semibold"
                         />
                       </div>
 
@@ -502,7 +634,7 @@ export default function Sequences() {
 
                     <button
                       onClick={handleUpdateTemplates}
-                      className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors cursor-pointer"
+                      className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-colors cursor-pointer"
                     >
                       Save Template Updates
                     </button>
@@ -512,11 +644,199 @@ export default function Sequences() {
             </div>
           ) : (
             <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-8 text-center text-slate-400 italic text-xs select-none">
-              Click on a sequence card to inspect its email templates, statistics, and contacts.
+              Click on a sequence template card to schedule batches, manage campaign sending dates, and configure follow-ups.
             </div>
           )}
         </div>
       </div>
+
+      {/* Create / Edit Batch Modal */}
+      {showBatchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden ring-1 ring-black/5 flex flex-col max-h-[85vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <h3 className="font-bold text-sm text-slate-800">
+                {editingBatch ? "Edit Scheduled Batch" : "Schedule Campaign Batch"}
+              </h3>
+              <button
+                onClick={() => setShowBatchModal(false)}
+                className="p-1 hover:bg-slate-200/80 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+              
+              {/* Batch Name */}
+              <div>
+                <label className="block font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Batch Name</label>
+                <input
+                  type="text"
+                  value={batchForm.name}
+                  onChange={(e) => setBatchForm({ ...batchForm, name: e.target.value })}
+                  placeholder="e.g. Q3 Outreach Batch A"
+                  className="w-full h-9 px-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold mb-2"
+                />
+              </div>
+
+              {/* Dates grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Initial Email Send Date</label>
+                  <input
+                    type="date"
+                    value={batchForm.email_send_date}
+                    onChange={(e) => {
+                      const newSendDate = e.target.value;
+                      setBatchForm(prev => {
+                        const suggestedFollowups = [];
+                        if (newSendDate && selectedSequence.followupDays) {
+                          const dateObj = new Date(newSendDate);
+                          dateObj.setDate(dateObj.getDate() + selectedSequence.followupDays);
+                          suggestedFollowups.push(dateObj.toISOString().split("T")[0]);
+                        }
+                        return {
+                          ...prev,
+                          email_send_date: newSendDate,
+                          follow_up_dates: suggestedFollowups
+                        };
+                      });
+                    }}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Follow-up Send Dates</label>
+                  <div className="space-y-2">
+                    {batchForm.follow_up_dates.map((date, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5">
+                        <input
+                          type="date"
+                          value={date}
+                          onChange={(e) => {
+                            const newDates = [...batchForm.follow_up_dates];
+                            newDates[idx] = e.target.value;
+                            setBatchForm({ ...batchForm, follow_up_dates: newDates });
+                          }}
+                          className="flex-1 h-9 px-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newDates = batchForm.follow_up_dates.filter((_, i) => i !== idx);
+                            setBatchForm({ ...batchForm, follow_up_dates: newDates });
+                          }}
+                          className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-100 transition-colors cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newDates = [...batchForm.follow_up_dates];
+                        let baseDate = batchForm.email_send_date || new Date().toISOString().split("T")[0];
+                        if (newDates.length > 0) {
+                          baseDate = newDates[newDates.length - 1];
+                        }
+                        const dateObj = new Date(baseDate);
+                        dateObj.setDate(dateObj.getDate() + (selectedSequence.followupDays || 3));
+                        newDates.push(dateObj.toISOString().split("T")[0]);
+                        setBatchForm({ ...batchForm, follow_up_dates: newDates });
+                      }}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5 font-bold" />
+                      Add Follow-up Date
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contacts Picker */}
+              <div className="space-y-2 pt-3 border-t border-slate-100 flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-600 uppercase tracking-wide">Target Contacts ({batchForm.contactIds.length} Selected)</label>
+                  <input
+                    type="text"
+                    placeholder="Search contacts by name or email..."
+                    value={searchContact}
+                    onChange={(e) => setSearchContact(e.target.value)}
+                    className="w-56 h-8 px-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-normal"
+                  />
+                </div>
+
+                <div className="border border-slate-200 rounded-lg max-h-56 overflow-y-auto divide-y divide-slate-100 bg-slate-50/50 scrollbar-thin">
+                  {allContacts.length === 0 ? (
+                    <p className="text-center py-6 text-slate-400 italic">No available contacts (ensure they are imported and not in other batches).</p>
+                  ) : (
+                    (() => {
+                      const filtered = allContacts.filter(c => {
+                        const term = searchContact.toLowerCase();
+                        return (c.firstName + " " + c.lastName).toLowerCase().includes(term) || c.email?.toLowerCase().includes(term);
+                      });
+
+                      if (filtered.length === 0) {
+                        return <p className="text-center py-6 text-slate-400 italic">No contacts match search query.</p>;
+                      }
+
+                      return filtered.map((c) => {
+                        const isChecked = batchForm.contactIds.includes(c._id);
+                        return (
+                          <label
+                            key={c._id}
+                            className={`flex items-center gap-3 px-4 py-2 hover:bg-slate-100 cursor-pointer select-none ${isChecked ? "bg-indigo-50/20" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                const newIds = isChecked
+                                  ? batchForm.contactIds.filter(id => id !== c._id)
+                                  : [...batchForm.contactIds, c._id];
+                                setBatchForm({ ...batchForm, contactIds: newIds });
+                              }}
+                              className="w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-800 truncate">{c.firstName} {c.lastName}</p>
+                              <p className="text-slate-400 text-[10px] truncate">{c.email} | {c.companyName || "No Company"}</p>
+                            </div>
+                          </label>
+                        );
+                      });
+                    })()
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowBatchModal(false)}
+                className="px-4 py-2 border border-slate-200 bg-white text-slate-600 font-semibold rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveBatch}
+                className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer shadow-sm shadow-indigo-600/10"
+              >
+                Save Scheduled Batch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

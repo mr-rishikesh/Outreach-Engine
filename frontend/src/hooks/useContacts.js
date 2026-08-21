@@ -1,27 +1,34 @@
+import { useSearchParams } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../api";
 
 export function useContacts() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [contacts, setContacts] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [loading, setLoading] = useState(false);
-  const [params, setParams] = useState({ page: 1, limit: 25, sort: "-createdAt" });
-  const [filters, setFilters] = useState({});
-  const [search, setSearchRaw] = useState("");
+  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
 
-  const setSearch = (val) => {
-    setSearchRaw(val);
-    setParams((p) => ({ ...p, page: 1 }));
-  };
+  // Get active filters from URL (excluding built-in pagination params)
+  const filters = {};
+  searchParams.forEach((value, key) => {
+    if (key !== "page" && key !== "limit" && key !== "sort" && key !== "search") {
+      filters[key] = value;
+    }
+  });
+
+  const search = searchParams.get("search") || "";
+  const page = parseInt(searchParams.get("page")) || 1;
+  const limit = parseInt(searchParams.get("limit")) || 25;
+  const sort = searchParams.get("sort") || "-createdAt";
 
   const fetchContacts = useCallback(async () => {
     setLoading(true);
     try {
       const hasFilters = Object.keys(filters).some((k) => filters[k] !== "" && filters[k] !== undefined);
-      const queryParams = { ...params };
+      const queryParams = { page, limit, sort };
       if (search) queryParams.search = search;
 
-      console.log("📡 Fetching contacts...", { queryParams, hasFilters, search });
+      console.log("📡 Fetching contacts...", { queryParams, hasFilters, search, filters });
 
       let data;
       if (hasFilters) {
@@ -30,38 +37,89 @@ export function useContacts() {
         data = await api.getContacts(queryParams);
       }
 
-      console.log("✅ Contacts received:", { total: data.pagination.total, returned: data.data.length });
-
-      setContacts(data.data);
-      setPagination(data.pagination);
+      setContacts(data.data || []);
+      setPagination(data.pagination || { page, limit, total: 0, pages: 0 });
     } catch (err) {
       console.error("❌ Failed to fetch contacts:", err);
     } finally {
       setLoading(false);
     }
-  }, [params, filters, search]);
+    // Deep comparison of filters using JSON stringify to avoid infinite loop
+  }, [page, limit, sort, search, JSON.stringify(filters)]);
 
   useEffect(() => {
     fetchContacts();
   }, [fetchContacts]);
 
-  const setPage = (page) => setParams((p) => ({ ...p, page }));
-  const setSort = (sort) => setParams((p) => ({ ...p, sort, page: 1 }));
-  const setLimit = (limit) => setParams((p) => ({ ...p, limit, page: 1 }));
+  const setPage = (newPage) => {
+    setSearchParams((prev) => {
+      prev.set("page", newPage.toString());
+      return prev;
+    }, { replace: true });
+  };
+
+  const setSort = (newSort) => {
+    setSearchParams((prev) => {
+      prev.set("sort", newSort);
+      prev.set("page", "1");
+      return prev;
+    }, { replace: true });
+  };
+
+  const setLimit = (newLimit) => {
+    setSearchParams((prev) => {
+      prev.set("limit", newLimit.toString());
+      prev.set("page", "1");
+      return prev;
+    }, { replace: true });
+  };
+
+  const setSearch = (newSearch) => {
+    setSearchParams((prev) => {
+      if (newSearch) {
+        prev.set("search", newSearch);
+      } else {
+        prev.delete("search");
+      }
+      prev.set("page", "1");
+      return prev;
+    }, { replace: true });
+  };
 
   const applyFilters = (newFilters) => {
-    // Remove empty values
-    const clean = {};
-    Object.entries(newFilters).forEach(([k, v]) => {
-      if (v !== "" && v !== undefined && v !== null) clean[k] = v;
-    });
-    setFilters(clean);
-    setParams((p) => ({ ...p, page: 1 }));
+    setSearchParams((prev) => {
+      // Clear old filter parameters (non-pagination parameters)
+      const keys = [];
+      prev.forEach((_, key) => {
+        if (key !== "page" && key !== "limit" && key !== "sort" && key !== "search") {
+          keys.push(key);
+        }
+      });
+      keys.forEach((key) => prev.delete(key));
+
+      // Set new ones
+      Object.entries(newFilters).forEach(([k, v]) => {
+        if (v !== "" && v !== undefined && v !== null) {
+          prev.set(k, v.toString());
+        }
+      });
+      prev.set("page", "1");
+      return prev;
+    }, { replace: true });
   };
 
   const clearFilters = () => {
-    setFilters({});
-    setParams((p) => ({ ...p, page: 1 }));
+    setSearchParams((prev) => {
+      const keys = [];
+      prev.forEach((_, key) => {
+        if (key !== "page" && key !== "limit" && key !== "sort" && key !== "search") {
+          keys.push(key);
+        }
+      });
+      keys.forEach((key) => prev.delete(key));
+      prev.set("page", "1");
+      return prev;
+    }, { replace: true });
   };
 
   return {

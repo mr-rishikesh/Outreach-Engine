@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
-import nodemailer from "nodemailer";
 
 dotenv.config();
-
+import nodemailer from "nodemailer"
+// import { prompts } from "../ai-service/prompt.js";
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -11,18 +11,26 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendEmailsNodemailer = async ({ subject, bdy }, email) => {
-  const mailOptions = {
+
+export const sendEmailsNodemailer = async ({subject , bdy  } , email) => {
+   
+
+    const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: email,
+    to: email ,
     subject: subject,
     text: bdy,
+
+     
   };
   try {
     await transporter.sendMail(mailOptions);
-    return { seccess: true };
+    return { seccess: true }
   } catch (error) {
-    console.log("error wile sending email ", error);
-    return { seccess: false };
+    console.log("error wile sending email ", error)
+    return { seccess: false, error: error.message }
   }
-};
+ 
+
+
+}

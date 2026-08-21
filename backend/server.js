@@ -2,15 +2,20 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import dns from "dns";
-import os from "os";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, "../.env") });
+dotenv.config({ path: path.join(__dirname, ".env") });
 import multer from "multer";
 import csv from "csv-parser";
 import fs from "fs";
-import Contact from "./models/Contacts.js";
+import Contact, { backfillLeadIds } from "./models/Contacts.js";
 import { sendInternshipMail } from "./ai-service/service.js";
 // import { sendEmail } from "./email-service/index.js";
 import emailRouter from "./routes/email.router.js";
@@ -18,11 +23,15 @@ import contactRouter from "./routes/contact.router.js";
 import apolloRouter from "./routes/apollo.router.js";
 import sequenceRouter from "./routes/sequence.router.js";
 import settingsRouter from "./routes/settings.router.js";
+import companyRouter from "./routes/company.router.js";
+import { backfillCompanies } from "./models/Company.js";
+import batchRouter from "./routes/batch.router.js";
+import { startScheduler } from "./services/sequenceScheduler.js";
 
 console.log("✅ Routers imported");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.VITE_PORT || 5000;
 
 // CORS for all ports (development)
 app.use((req, res, next) => {
@@ -67,6 +76,10 @@ app.use("/api/sequences", sequenceRouter);
 console.log("✅ Sequence router registered");
 app.use("/api/settings", settingsRouter);
 console.log("✅ Settings router registered");
+app.use("/api/companies", companyRouter);
+console.log("✅ Companies router registered");
+app.use("/api/batches", batchRouter);
+console.log("✅ Batches router registered");
 
 // MongoDB connect
 mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/outreach-crm", {
@@ -77,10 +90,13 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/outreach-cr
   // Debug: Check if data exists
   const count = await Contact.countDocuments();
   console.log(`📊 Total contacts in database: ${count}`);
+  await backfillLeadIds();
+  await backfillCompanies();
+  startScheduler();
 })
   .catch(err => console.error("❌ MongoDB error:", err));
 
-const upload = multer({ dest: os.tmpdir() });
+const upload = multer({ dest: "uploads/" });
 
 // app.get("/res" ,async (req , res) => {
 //   console.log("route");
@@ -241,8 +257,4 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-if (!process.env.VERCEL) {
-  app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
-}
-
-export default app;
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
