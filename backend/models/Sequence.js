@@ -49,6 +49,10 @@ const sequenceSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  followupSubject: {
+    type: String,
+    default: ""
+  },
   signature: {
     type: String,
     default: "Thank You"
@@ -72,6 +76,10 @@ const sequenceSchema = new mongoose.Schema({
   maxFollowups: {
     type: Number,
     default: 1
+  },
+  lastSentDate: {
+    type: Date,
+    default: null
   },
   contacts: [sequenceContactSchema]
 }, { timestamps: true });

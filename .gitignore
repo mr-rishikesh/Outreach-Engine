@@ -36,3 +36,5 @@ Thumbs.db
 
 # Package lock (optional - keep root only)
 # package-lock.json
+
+.vercel
