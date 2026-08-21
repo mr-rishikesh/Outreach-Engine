@@ -12,16 +12,25 @@ const thankq = [
   "Thank you so much ... ",
 ];
 
-// Helper to format email body, greeting and ensure thank you at the end
-const formatEmailContent = (greeting, body, signature, contact) => {
-  let formattedGreeting = greeting || "Hii {first_name} {last_name}";
-  formattedGreeting = formattedGreeting
+// Helper to replace placeholders dynamically
+const replacePlaceholders = (text, contact) => {
+  if (!text) return "";
+  return text
     .replace(/{first_name}/g, contact.firstName || "")
     .replace(/{last_name}/g, contact.lastName || "")
     .replace(/{firstName}/g, contact.firstName || "")
-    .replace(/{lastName}/g, contact.lastName || "");
+    .replace(/{lastName}/g, contact.lastName || "")
+    .replace(/{company_name}/g, contact.companyName || contact.companyNameForEmails || "")
+    .replace(/{companyName}/g, contact.companyName || contact.companyNameForEmails || "");
+};
 
-  let formattedSignature = signature || "Thank You";
+// Helper to format email body, greeting and ensure thank you at the end
+const formatEmailContent = (greeting, body, signature, contact) => {
+  const defaultGreeting = "Hii {first_name} {last_name}";
+  let formattedGreeting = replacePlaceholders(greeting || defaultGreeting, contact);
+  let formattedBody = replacePlaceholders(body || "", contact);
+  let formattedSignature = replacePlaceholders(signature || "Thank You", contact);
+  
   const hasThankYou = thankq.some(t => formattedSignature.toLowerCase().includes(t.toLowerCase())) || 
                      formattedSignature.toLowerCase().includes("thank");
   
@@ -30,7 +39,7 @@ const formatEmailContent = (greeting, body, signature, contact) => {
     formattedSignature = `${randomThank}\n\n${formattedSignature}`;
   }
 
-  return `${formattedGreeting},\n\n${body}\n\n${formattedSignature}`;
+  return `${formattedGreeting},\n\n${formattedBody}\n\n${formattedSignature}`;
 };
 
 // POST /api/sequences - Create new sequence
@@ -408,6 +417,176 @@ export const runSequence = async (req, res) => {
     res.json({ success: true, results });
   } catch (error) {
     console.error("❌ runSequence error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// GET /api/sequences/:id/eligible
+export const getEligibleContacts = async (req, res) => {
+  try {
+    const { type } = req.query; // 'primary' or 'followup'
+    const sequence = await Sequence.findById(req.params.id).populate("contacts.contactId");
+    if (!sequence) {
+      return res.status(404).json({ success: false, error: "Sequence not found." });
+    }
+
+    if (sequence.status !== "active") {
+      return res.status(400).json({ success: false, error: `Sequence is not active.` });
+    }
+
+    const eligible = [];
+    sequence.contacts.forEach((sc) => {
+      if (sc.status === "removed" || !sc.contactId) return;
+
+      const contact = sc.contactId;
+
+      // Skip replied
+      if (
+        contact.reply?.replied || 
+        contact.outreachStatus === "REPLIED_POSITIVE" || 
+        contact.outreachStatus === "REPLIED_NEGATIVE" || 
+        sc.status === "replied"
+      ) {
+        return;
+      }
+
+      // Skip bounced / doNotContact / unsubscribe
+      if (contact.flags?.doNotContact || contact.flags?.bounced || contact.flags?.unsubscribe) {
+        return;
+      }
+
+      // Check primary eligibility
+      if (type === "primary") {
+        if (sc.status === "pending") {
+          eligible.push(contact);
+        }
+      } 
+      // Check follow-up eligibility (bypassing time constraint per user's request)
+      else if (type === "followup") {
+        if (
+          (sc.status === "sent" || sc.status === "followup_pending") &&
+          sc.followupCount < sequence.maxFollowups &&
+          sequence.followupBody
+        ) {
+          eligible.push(contact);
+        }
+      }
+    });
+
+    res.json({ success: true, data: eligible });
+  } catch (error) {
+    console.error("❌ getEligibleContacts error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// POST /api/sequences/:id/send-single
+export const sendSingleSequenceEmail = async (req, res) => {
+  try {
+    const { contactId, type } = req.body; // 'primary' or 'followup'
+    const sequence = await Sequence.findById(req.params.id).populate("contacts.contactId");
+    if (!sequence) {
+      return res.status(404).json({ success: false, error: "Sequence not found." });
+    }
+
+    if (sequence.status !== "active") {
+      return res.status(400).json({ success: false, error: `Sequence is not active.` });
+    }
+
+    const settings = await getOrInitializeSettings();
+    if (settings.emailsSentToday >= settings.maxEmailsPerDay) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Daily limit of ${settings.maxEmailsPerDay} emails reached.` 
+      });
+    }
+
+    const index = sequence.contacts.findIndex(c => c.contactId && c.contactId._id.toString() === contactId.toString());
+    if (index === -1) {
+      return res.status(404).json({ success: false, error: "Contact not found in sequence." });
+    }
+
+    const sc = sequence.contacts[index];
+    const contact = sc.contactId;
+
+    if (isBlockedDomain(contact.email)) {
+      return res.status(400).json({ success: false, error: "Email domain is blocked." });
+    }
+
+    const now = new Date();
+    const isFollowup = type === "followup";
+
+    const emailSubject = isFollowup
+      ? replacePlaceholders(sequence.followupSubject || `Re: ${sequence.subject || sequence.name} follow-up`, contact)
+      : replacePlaceholders(sequence.subject || sequence.name, contact);
+
+    const emailText = isFollowup
+      ? formatEmailContent(sequence.followupGreeting, sequence.followupBody, sequence.followupSignature, contact)
+      : formatEmailContent(sequence.greeting, sequence.body, sequence.signature, contact);
+
+    const { seccess } = await sendEmailsNodemailer({ subject: emailSubject, bdy: emailText }, contact.email);
+
+    if (seccess) {
+      // Update Sequence contact status
+      sequence.contacts[index].lastSentDate = now;
+      sequence.contacts[index].status = isFollowup ? "followup_pending" : "sent";
+      if (isFollowup) {
+        sequence.contacts[index].followupCount += 1;
+        if (sequence.contacts[index].followupCount >= sequence.maxFollowups) {
+          sequence.contacts[index].status = "sent"; // Finished followups
+        }
+      }
+
+      // Also set top-level lastSentDate on the Sequence itself
+      sequence.lastSentDate = now;
+
+      await sequence.save();
+
+      // Update Contact record
+      await Contact.findByIdAndUpdate(contact._id, {
+        $set: {
+          lastSentDate: now,
+          outreachStatus: isFollowup ? "FOLLOWUP_PENDING" : "SENT",
+        },
+        $inc: { "emailStats.emailsSent": 1 },
+        $push: { 
+          emails: { 
+            type: isFollowup ? "followup" : "outreach", 
+            subject: emailSubject, 
+            sentAt: now 
+          } 
+        },
+      });
+
+      // Increment settings
+      settings.emailsSentToday += 1;
+      await settings.save();
+
+      res.json({ success: true });
+    } else {
+      // Failed to send
+      sequence.contacts[index].lastSentDate = now;
+      sequence.contacts[index].status = isFollowup ? "followup_pending" : "sent";
+      if (isFollowup) {
+        sequence.contacts[index].followupCount += 1;
+        if (sequence.contacts[index].followupCount >= sequence.maxFollowups) {
+          sequence.contacts[index].status = "sent";
+        }
+      }
+      sequence.lastSentDate = now;
+      await sequence.save();
+
+      await Contact.findByIdAndUpdate(contact._id, {
+        $set: {
+          lastSentDate: now,
+          outreachStatus: isFollowup ? "FOLLOWUP_PENDING" : "SENT",
+        },
+      });
+
+      res.status(500).json({ success: false, error: "Nodemailer send failed." });
+    }
+  } catch (error) {
+    console.error("❌ sendSingleSequenceEmail error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
