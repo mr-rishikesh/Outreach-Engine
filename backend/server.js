@@ -1,3 +1,4 @@
+const APP_VERSION = "1.1.0";
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -51,7 +52,7 @@ app.get("/test", (req, res) => {
   res.json({ message: "Server is working!" });
 });
 
-const APP_VERSION = "1.1.0";
+// const APP_VERSION = "1.1.0";
 
 app.get("/api/version", (req, res) => {
   res.json({ version: APP_VERSION });
