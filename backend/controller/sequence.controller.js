@@ -3,6 +3,7 @@ import Sequence from "../models/Sequence.js";
 import Contact from "../models/Contacts.js";
 import { sendEmailsNodemailer } from "../email-service/index.js";
 import { isBlockedDomain } from "../utils/blockedDomains.js";
+import { isContactBlockedFromEmails } from "../utils/emailFilters.js";
 import { getOrInitializeSettings } from "../controller/settings.controller.js";
 
 const thankq = [
@@ -291,8 +292,8 @@ export const runSequence = async (req, res) => {
 
       const contact = sc.contactId;
 
-      // Skip blocked/doNotContact
-      if (contact.flags?.doNotContact || contact.flags?.bounced || contact.flags?.unsubscribe) {
+      // Skip blocked/doNotContact/bounced/replied
+      if (isContactBlockedFromEmails(contact).blocked) {
         return;
       }
 
@@ -327,8 +328,9 @@ export const runSequence = async (req, res) => {
         continue;
       }
 
-      if (isBlockedDomain(contact.email)) {
-        results.skipped.push({ id: contact._id, email: contact.email, reason: "Blocked domain" });
+      const checkBlocked = isContactBlockedFromEmails(contact);
+      if (checkBlocked.blocked) {
+        results.skipped.push({ id: contact._id, email: contact.email, reason: checkBlocked.reason });
         processed++;
         continue;
       }
@@ -440,18 +442,8 @@ export const getEligibleContacts = async (req, res) => {
 
       const contact = sc.contactId;
 
-      // Skip replied
-      if (
-        contact.reply?.replied || 
-        contact.outreachStatus === "REPLIED_POSITIVE" || 
-        contact.outreachStatus === "REPLIED_NEGATIVE" || 
-        sc.status === "replied"
-      ) {
-        return;
-      }
-
-      // Skip bounced / doNotContact / unsubscribe
-      if (contact.flags?.doNotContact || contact.flags?.bounced || contact.flags?.unsubscribe) {
+      // Skip blocked/doNotContact/bounced/replied/domain
+      if (isContactBlockedFromEmails(contact).blocked || sc.status === "replied") {
         return;
       }
 
@@ -509,8 +501,9 @@ export const sendSingleSequenceEmail = async (req, res) => {
     const sc = sequence.contacts[index];
     const contact = sc.contactId;
 
-    if (isBlockedDomain(contact.email)) {
-      return res.status(400).json({ success: false, error: "Email domain is blocked." });
+    const checkBlocked = isContactBlockedFromEmails(contact);
+    if (checkBlocked.blocked) {
+      return res.status(400).json({ success: false, error: `Cannot send email: ${checkBlocked.reason}` });
     }
 
     const now = new Date();

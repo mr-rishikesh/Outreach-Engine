@@ -3,6 +3,7 @@ import { generateInternshipEmail } from "../ai-service/groqservice.js";
 import { formate } from "../email-service/email.body.format.js";
 import { sendEmailsNodemailer } from "../email-service/index.js";
 import { isBlockedDomain } from "../utils/blockedDomains.js";
+import { isContactBlockedFromEmails } from "../utils/emailFilters.js";
 
 const thankq = [
   "Thanks", "Thank You", "Thanks..", "Thank You..",
@@ -24,6 +25,8 @@ export const sendToContacts = async (req, res) => {
       "flags.doNotContact": { $ne: true },
       "flags.bounced": { $ne: true },
       "flags.unsubscribe": { $ne: true },
+      "reply.replied": { $ne: true },
+      replied: { $ne: "true" },
     });
 
     const results = { sent: [], failed: [], skipped: [] };
@@ -37,11 +40,12 @@ export const sendToContacts = async (req, res) => {
     const startTime = Date.now();
 
     for (const contact of contacts) {
-      // Block sending to restricted domains
-      if (isBlockedDomain(contact.email)) {
-        results.skipped.push({ id: contact._id, email: contact.email, reason: "Blocked domain" });
+      // Block sending to restricted/bounced/replied/DNC contacts
+      const checkBlocked = isContactBlockedFromEmails(contact);
+      if (checkBlocked.blocked) {
+        results.skipped.push({ id: contact._id, email: contact.email, reason: checkBlocked.reason });
         processed++;
-        console.log(`⏭️  SKIPPED [${processed}/${totalContacts}] - ${contact.email} (Blocked domain)`);
+        console.log(`⏭️  SKIPPED [${processed}/${totalContacts}] - ${contact.email} (${checkBlocked.reason})`);
         continue;
       }
 
@@ -53,13 +57,9 @@ export const sendToContacts = async (req, res) => {
         const { seccess } = await sendEmailsNodemailer({ subject, bdy }, contact.email);
 
         if (seccess) {
-          // Set lastSentDate to today
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-
           await Contact.findByIdAndUpdate(contact._id, {
             $set: {
-              lastSentDate: today,
+              lastSentDate: new Date(),
               outreachStatus: contact.outreachStatus === "NOT_SENT" ? "SENT" : contact.outreachStatus,
             },
             $inc: { "emailStats.emailsSent": 1 },
@@ -130,6 +130,8 @@ export const sendFollowup = async (req, res) => {
       "flags.doNotContact": { $ne: true },
       "flags.bounced": { $ne: true },
       "flags.unsubscribe": { $ne: true },
+      "reply.replied": { $ne: true },
+      replied: { $ne: "true" },
       "followup.followupEnabled": true,
       $expr: { $lt: ["$followup.followupCount", "$followup.maxFollowups"] },
     });
@@ -145,11 +147,12 @@ export const sendFollowup = async (req, res) => {
     const startTime = Date.now();
 
     for (const contact of contacts) {
-      // Block sending to restricted domains
-      if (isBlockedDomain(contact.email)) {
-        results.skipped.push({ id: contact._id, email: contact.email, reason: "Blocked domain" });
+      // Block sending to restricted/bounced/replied/DNC contacts
+      const checkBlocked = isContactBlockedFromEmails(contact);
+      if (checkBlocked.blocked) {
+        results.skipped.push({ id: contact._id, email: contact.email, reason: checkBlocked.reason });
         processed++;
-        console.log(`⏭️  SKIPPED [${processed}/${totalContacts}] - ${contact.email} (Blocked domain)`);
+        console.log(`⏭️  SKIPPED [${processed}/${totalContacts}] - ${contact.email} (${checkBlocked.reason})`);
         continue;
       }
 
@@ -164,10 +167,6 @@ export const sendFollowup = async (req, res) => {
         );
 
         if (seccess) {
-          // Set lastSentDate to today
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-
           // Schedule next follow-up 3 days from now
           const nextFollowup = new Date();
           nextFollowup.setDate(nextFollowup.getDate() + 3);
@@ -175,7 +174,7 @@ export const sendFollowup = async (req, res) => {
 
           await Contact.findByIdAndUpdate(contact._id, {
             $set: {
-              lastSentDate: today,
+              lastSentDate: new Date(),
               outreachStatus: "FOLLOWUP_PENDING",
               "followup.nextFollowupAt": nextFollowup,
             },

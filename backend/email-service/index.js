@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
-
 dotenv.config();
-import nodemailer from "nodemailer"
-// import { prompts } from "../ai-service/prompt.js";
+import nodemailer from "nodemailer";
+import Contact from "../models/Contacts.js";
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -25,6 +25,14 @@ export const sendEmailsNodemailer = async ({subject , bdy  } , email) => {
   };
   try {
     await transporter.sendMail(mailOptions);
+    try {
+      await Contact.updateMany(
+        { email: { $regex: new RegExp(`^${email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') } },
+        { $set: { lastSentDate: new Date() } }
+      );
+    } catch (dbError) {
+      console.error("⚠️ Failed to update lastSentDate in sendEmailsNodemailer:", dbError);
+    }
     return { seccess: true }
   } catch (error) {
     console.log("error wile sending email ", error)

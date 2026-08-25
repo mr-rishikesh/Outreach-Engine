@@ -3,6 +3,7 @@ import Contact from "../models/Contacts.js";
 import Batch from "../models/Batch.js";
 import Sequence from "../models/Sequence.js";
 import { sendEmailsNodemailer } from "../email-service/index.js";
+import { isContactBlockedFromEmails } from "../utils/emailFilters.js";
 import { getOrInitializeSettings } from "../controller/settings.controller.js";
 
 // Helper to format email body, greeting and ensure thank you at the end
@@ -65,7 +66,9 @@ export const runDailyScheduler = async () => {
       }
 
       // Check contact flags
-      if (contact.flags?.doNotContact || contact.flags?.bounced || contact.flags?.unsubscribe) {
+      const checkBlocked = isContactBlockedFromEmails(contact);
+      if (checkBlocked.blocked) {
+        console.log(`⏭️ Skipping contact ${contact.email} - ${checkBlocked.reason}`);
         contact.next_send_date = null;
         contact.next_send_type = null;
         contact.batch_id = null;
