@@ -99,6 +99,10 @@ export const api = {
     method: "POST",
     body: JSON.stringify(data)
   }),
+  sendTestSequenceEmail: (data) => request(`${BASE_URL}/api/sequences/test-email`, {
+    method: "POST",
+    body: JSON.stringify(data)
+  }),
   updateSequence: (id, data) => request(`${BASE_URL}/api/sequences/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data)

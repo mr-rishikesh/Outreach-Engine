@@ -6,42 +6,7 @@ import { isBlockedDomain } from "../utils/blockedDomains.js";
 import { isContactBlockedFromEmails } from "../utils/emailFilters.js";
 import { getOrInitializeSettings } from "../controller/settings.controller.js";
 
-const thankq = [
-  "Thanks", "Thank You", "Thanks..", "Thank You..",
-  "Thank You so much for Considering", "Thank a lot",
-  "Thanks for considering", "Thank You...", "Thanks....", "Thanks ..",
-  "Thank you so much ... ",
-];
-
-// Helper to replace placeholders dynamically
-const replacePlaceholders = (text, contact) => {
-  if (!text) return "";
-  return text
-    .replace(/{first_name}/g, contact.firstName || "")
-    .replace(/{last_name}/g, contact.lastName || "")
-    .replace(/{firstName}/g, contact.firstName || "")
-    .replace(/{lastName}/g, contact.lastName || "")
-    .replace(/{company_name}/g, contact.companyName || contact.companyNameForEmails || "")
-    .replace(/{companyName}/g, contact.companyName || contact.companyNameForEmails || "");
-};
-
-// Helper to format email body, greeting and ensure thank you at the end
-const formatEmailContent = (greeting, body, signature, contact) => {
-  const defaultGreeting = "Hii {first_name} {last_name}";
-  let formattedGreeting = replacePlaceholders(greeting || defaultGreeting, contact);
-  let formattedBody = replacePlaceholders(body || "", contact);
-  let formattedSignature = replacePlaceholders(signature || "Thank You", contact);
-  
-  const hasThankYou = thankq.some(t => formattedSignature.toLowerCase().includes(t.toLowerCase())) || 
-                     formattedSignature.toLowerCase().includes("thank");
-  
-  if (!hasThankYou) {
-    const randomThank = thankq[Math.floor(Math.random() * thankq.length)];
-    formattedSignature = `${randomThank}\n\n${formattedSignature}`;
-  }
-
-  return `${formattedGreeting},\n\n${formattedBody}\n\n${formattedSignature}`;
-};
+import { formatEmailContent, replacePlaceholders } from "../utils/emailPlaceholder.js";
 
 // POST /api/sequences - Create new sequence
 export const createSequence = async (req, res) => {
@@ -581,5 +546,43 @@ export const sendSingleSequenceEmail = async (req, res) => {
   } catch (error) {
     console.error("❌ sendSingleSequenceEmail error:", error);
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const sendTestSequenceEmail = async (req, res) => {
+  try {
+    const { email, subject, greeting, body, signature, step } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Recipient email is required" });
+    }
+
+    const mockContact = {
+      firstName: "John",
+      lastName: "Doe",
+      title: "Founder & CEO",
+      companyName: "Acme Corporation",
+      companyNameForEmails: "Acme",
+      email: "john.doe@acme.com",
+      city: "San Francisco",
+      state: "California",
+      country: "United States",
+      website: "https://acme.com",
+      industry: "Technology"
+    };
+
+    const emailText = formatEmailContent(greeting, body, signature, mockContact);
+    const emailSubject = step === "followup" ? `Re: ${subject}` : subject;
+
+    const result = await sendEmailsNodemailer({ subject: emailSubject, bdy: emailText }, email);
+
+    if (result.seccess) {
+      return res.json({ message: "Test email sent successfully" });
+    } else {
+      return res.status(500).json({ error: "Failed to send email via SMTP" });
+    }
+  } catch (err) {
+    console.error("❌ sendTestSequenceEmail error:", err);
+    res.status(500).json({ error: err.message });
   }
 };

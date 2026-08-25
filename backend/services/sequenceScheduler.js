@@ -5,34 +5,7 @@ import Sequence from "../models/Sequence.js";
 import { sendEmailsNodemailer } from "../email-service/index.js";
 import { isContactBlockedFromEmails } from "../utils/emailFilters.js";
 import { getOrInitializeSettings } from "../controller/settings.controller.js";
-
-// Helper to format email body, greeting and ensure thank you at the end
-const thankq = [
-  "Thanks", "Thank You", "Thanks..", "Thank You..",
-  "Thank You so much for Considering", "Thank a lot",
-  "Thanks for considering", "Thank You...", "Thanks....", "Thanks ..",
-  "Thank you so much ... ",
-];
-
-const formatEmailContent = (greeting, body, signature, contact) => {
-  let formattedGreeting = greeting || "Hii {first_name} {last_name}";
-  formattedGreeting = formattedGreeting
-    .replace(/{first_name}/g, contact.firstName || "")
-    .replace(/{last_name}/g, contact.lastName || "")
-    .replace(/{firstName}/g, contact.firstName || "")
-    .replace(/{lastName}/g, contact.lastName || "");
-
-  let formattedSignature = signature || "Thank You";
-  const hasThankYou = thankq.some(t => formattedSignature.toLowerCase().includes(t.toLowerCase())) || 
-                     formattedSignature.toLowerCase().includes("thank");
-  
-  if (!hasThankYou) {
-    const randomThank = thankq[Math.floor(Math.random() * thankq.length)];
-    formattedSignature = `${randomThank}\n\n${formattedSignature}`;
-  }
-
-  return `${formattedGreeting},\n\n${body}\n\n${formattedSignature}`;
-};
+import { formatEmailContent } from "../utils/emailPlaceholder.js";
 
 export const runDailyScheduler = async () => {
   console.log("⏰ Daily scheduler execution started...");

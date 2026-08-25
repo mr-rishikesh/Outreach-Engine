@@ -1,12 +1,42 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, HelpCircle, Check } from "lucide-react";
+import { ArrowLeft, HelpCircle, Check, Sparkles } from "lucide-react";
 import { api } from "../api";
 import toast from "react-hot-toast";
 
 export default function CreateSequence() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [testStep, setTestStep] = useState("primary");
+  const [testRecipient, setTestRecipient] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
+
+  const handleSendTest = async () => {
+    if (!testRecipient.trim()) {
+      toast.error("Please enter a recipient email address.");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const payload = {
+        email: testRecipient,
+        subject: sequenceInfo.subject,
+        greeting: testStep === "followup" ? sequenceInfo.followupGreeting : sequenceInfo.greeting,
+        body: testStep === "followup" ? sequenceInfo.followupBody : sequenceInfo.body,
+        signature: testStep === "followup" ? sequenceInfo.followupSignature : sequenceInfo.signature,
+        step: testStep
+      };
+      await api.sendTestSequenceEmail(payload);
+      toast.success("Test email dispatched successfully!");
+      setShowTestModal(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to send test email.");
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   const [sequenceInfo, setSequenceInfo] = useState({
     name: "",
@@ -253,18 +283,67 @@ export default function CreateSequence() {
             )}
           </div>
 
-          <button
-            onClick={handleCreate}
-            disabled={loading}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-          >
-            {loading ? "Creating Template..." : "Create Sequence Template"}
-            <Check className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleCreate}
+              disabled={loading}
+              className="flex-grow py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {loading ? "Creating Template..." : "Create Sequence Template"}
+              <Check className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTestModal(true)}
+              className="px-6 py-3 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+            >
+              Send Test Email
+            </button>
+          </div>
         </div>
 
         {/* Guidelines Sidebar */}
         <div className="space-y-6">
+          {/* Dynamic Placeholders Guide */}
+          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+            <h4 className="font-bold flex items-center gap-2 text-slate-800">
+              <Sparkles className="w-4 h-4 text-indigo-500" />
+              Dynamic Placeholders
+            </h4>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Insert these placeholders in curly brackets in the Subject, Greeting, Body, or Signature fields. Click any tag to copy it:
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { tag: "{first_name}", label: "First Name" },
+                { tag: "{last_name}", label: "Last Name" },
+                { tag: "{company_name}", label: "Company Name" },
+                { tag: "{companyNameForEmails}", label: "Short Company Name" },
+                { tag: "{title}", label: "Job Title" },
+                { tag: "{city}", label: "City" },
+                { tag: "{state}", label: "State" },
+                { tag: "{country}", label: "Country" },
+                { tag: "{website}", label: "Website" },
+                { tag: "{industry}", label: "Industry" },
+              ].map(({ tag, label }) => (
+                <div
+                  key={tag}
+                  onClick={() => {
+                    navigator.clipboard.writeText(tag);
+                    toast.success(`Copied placeholder: ${tag}`);
+                  }}
+                  className="flex items-center justify-between p-2 rounded-lg border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/20 transition-all cursor-pointer group text-[11px]"
+                  title="Click to copy"
+                >
+                  <span className="font-mono font-bold text-indigo-600 bg-indigo-50/50 px-1 py-0.5 rounded border border-indigo-100/30">
+                    {tag}
+                  </span>
+                  <span className="text-slate-400 font-medium">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-xl shadow-lg p-6 space-y-4">
             <h4 className="font-bold flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-indigo-300" />
@@ -284,6 +363,73 @@ export default function CreateSequence() {
           </div>
         </div>
       </div>
+
+      {/* Test Email Modal */}
+      {showTestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full border border-slate-100 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <h3 className="text-base font-bold text-slate-800">Send Test Email</h3>
+              <button
+                type="button"
+                onClick={() => setShowTestModal(false)}
+                className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer text-xl"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <p className="text-xs text-slate-500">
+              Send a test email using the currently entered template text. Places like <code>{"{first_name}"}</code> will be filled with mock contact data.
+            </p>
+
+            <div className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Select Step to Test</label>
+                <select
+                  value={testStep}
+                  onChange={(e) => setTestStep(e.target.value)}
+                  className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+                >
+                  <option value="primary">Step 1: Primary Email</option>
+                  {sequenceInfo.enableFollowup && (
+                    <option value="followup">Step 2: Automated Follow-up</option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Recipient Email Address</label>
+                <input
+                  type="email"
+                  placeholder="e.g. your-email@example.com"
+                  value={testRecipient}
+                  onChange={(e) => setTestRecipient(e.target.value)}
+                  className="w-full h-10 px-3 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowTestModal(false)}
+                className="h-10 px-4 text-xs font-bold border border-slate-200 text-slate-600 bg-white rounded-lg hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSendTest}
+                disabled={sendingTest || !testRecipient.trim()}
+                className="h-10 px-5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+              >
+                {sendingTest ? "Sending Test..." : "Send Test"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

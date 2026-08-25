@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import {
   Play, Pause, Mail, Users, Edit3, Trash2, Plus, 
-  ChevronRight, RefreshCw, X, Check, Loader2, ArrowRight, Calendar
+  ChevronRight, RefreshCw, X, Check, Loader2, ArrowRight, Calendar, Sparkles
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -13,6 +13,36 @@ export default function Sequences() {
   const [selectedSequence, setSelectedSequence] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [testStep, setTestStep] = useState("primary");
+  const [testRecipient, setTestRecipient] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
+
+  const handleSendTest = async () => {
+    if (!testRecipient.trim()) {
+      toast.error("Please enter a recipient email address.");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const payload = {
+        email: testRecipient,
+        subject: editForm.subject,
+        greeting: testStep === "followup" ? editForm.followupGreeting : editForm.greeting,
+        body: testStep === "followup" ? editForm.followupBody : editForm.body,
+        signature: testStep === "followup" ? editForm.followupSignature : editForm.signature,
+        step: testStep
+      };
+      await api.sendTestSequenceEmail(payload);
+      toast.success("Test email dispatched successfully!");
+      setShowTestModal(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Failed to send test email.");
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   // Batch states
   const [batches, setBatches] = useState([]);
@@ -527,6 +557,44 @@ export default function Sequences() {
                 {/* EDIT TEMPLATE VIEW */}
                 {editMode && (
                   <div className="space-y-4 text-xs">
+                    {/* Collapsible Variables Help */}
+                    <div className="border border-slate-200 rounded-lg bg-slate-50/50 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                          Dynamic Placeholders
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold select-none">Click to copy</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { tag: "{first_name}", label: "First Name" },
+                          { tag: "{last_name}", label: "Last Name" },
+                          { tag: "{company_name}", label: "Company Name" },
+                          { tag: "{companyNameForEmails}", label: "Short Company" },
+                          { tag: "{title}", label: "Job Title" },
+                          { tag: "{city}", label: "City" },
+                          { tag: "{state}", label: "State" },
+                          { tag: "{country}", label: "Country" },
+                          { tag: "{website}", label: "Website" },
+                          { tag: "{industry}", label: "Industry" },
+                        ].map(({ tag, label }) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(tag);
+                              toast.success(`Copied: ${tag}`);
+                            }}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-200 transition-all font-mono font-bold text-indigo-600 cursor-pointer shadow-sm text-[9px]"
+                            title={label}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block font-bold text-slate-600 mb-1">Sequence Name</label>
                       <input
@@ -632,12 +700,21 @@ export default function Sequences() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={handleUpdateTemplates}
-                      className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-colors cursor-pointer"
-                    >
-                      Save Template Updates
-                    </button>
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={handleUpdateTemplates}
+                        className="flex-grow py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-colors cursor-pointer"
+                      >
+                        Save Template Updates
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowTestModal(true)}
+                        className="px-4 py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg font-bold transition-colors cursor-pointer shrink-0"
+                      >
+                        Send Test
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -832,6 +909,73 @@ export default function Sequences() {
                 className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer shadow-sm shadow-indigo-600/10"
               >
                 Save Scheduled Batch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Test Email Modal */}
+      {showTestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full border border-slate-100 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-200 text-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <h3 className="text-sm font-bold text-slate-800">Send Test Email</h3>
+              <button
+                type="button"
+                onClick={() => setShowTestModal(false)}
+                className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer text-base"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <p className="text-slate-500 leading-relaxed">
+              Send a test email using the currently entered template text. Places like <code>{"{first_name}"}</code> will be filled with mock contact data.
+            </p>
+
+            <div className="space-y-3.5">
+              <div>
+                <label className="block text-slate-600 mb-1.5 font-bold uppercase tracking-wide">Select Step to Test</label>
+                <select
+                  value={testStep}
+                  onChange={(e) => setTestStep(e.target.value)}
+                  className="w-full h-9 px-3 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all cursor-pointer font-semibold"
+                >
+                  <option value="primary">Step 1: Primary Email</option>
+                  {editForm.followupBody && (
+                    <option value="followup">Step 2: Automated Follow-up</option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 mb-1.5 font-bold uppercase tracking-wide">Recipient Email Address</label>
+                <input
+                  type="email"
+                  placeholder="e.g. your-email@example.com"
+                  value={testRecipient}
+                  onChange={(e) => setTestRecipient(e.target.value)}
+                  className="w-full h-9 px-3 bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm font-semibold text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowTestModal(false)}
+                className="h-9 px-4 font-bold border border-slate-200 text-slate-600 bg-white rounded-lg hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSendTest}
+                disabled={sendingTest || !testRecipient.trim()}
+                className="h-9 px-5 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+              >
+                {sendingTest ? "Sending Test..." : "Send Test"}
               </button>
             </div>
           </div>
