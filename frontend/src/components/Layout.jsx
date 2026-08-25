@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import {
   Mail,
@@ -21,9 +21,28 @@ import toast from "react-hot-toast";
 export default function Layout() {
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [version, setVersion] = useState("v1.0.0");
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem("outreach_crm_sidebar_collapsed") === "true";
   });
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      try {
+        const baseUrl = import.meta.env.VITE_API_URL || "";
+        const res = await fetch(`${baseUrl}/api/version`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.version) {
+            setVersion(`v${data.version}`);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch version:", err);
+      }
+    };
+    fetchVersion();
+  }, []);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -268,6 +287,12 @@ export default function Layout() {
 
           {/* Header Right Elements */}
           <div className="flex items-center gap-4 sm:gap-5">
+            {/* Version badge */}
+            {version && (
+              <span className="inline-flex items-center h-6 px-2.5 text-[10px] font-extrabold bg-slate-100 text-slate-500 rounded-full border border-slate-200">
+                {version}
+              </span>
+            )}
             {/* Mega Menu Indicator */}
             <button
               onClick={() => handlePlaceholderClick("Mega Menu")}

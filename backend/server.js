@@ -51,6 +51,12 @@ app.get("/test", (req, res) => {
   res.json({ message: "Server is working!" });
 });
 
+const APP_VERSION = "1.1.0";
+
+app.get("/api/version", (req, res) => {
+  res.json({ version: APP_VERSION });
+});
+
 // Debug endpoint (before routes)
 app.get("/debug/contacts-count", async (req, res) => {
   try {

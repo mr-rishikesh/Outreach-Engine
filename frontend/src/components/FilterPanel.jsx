@@ -26,6 +26,23 @@ export default function FilterPanel({ filters, onApply, onClear }) {
   const [savedFilters, setSavedFilters] = useState({});
   const [saveName, setSaveName] = useState("");
   const [pinnedKeys, setPinnedKeys] = useState([]);
+  const [customMin, setCustomMin] = useState("");
+  const [customMax, setCustomMax] = useState("");
+
+  const presetSizes = ["1-10", "11-50", "51-200", "201-500", "500+"];
+
+  useEffect(() => {
+    if (local.employees && !presetSizes.includes(local.employees)) {
+      const parts = local.employees.split("-");
+      if (parts.length === 2) {
+        setCustomMin(parts[0]);
+        setCustomMax(parts[1]);
+      }
+    } else if (!local.employees) {
+      setCustomMin("");
+      setCustomMax("");
+    }
+  }, [local.employees]);
 
   useEffect(() => {
     setLocal({ ...filters });
@@ -196,14 +213,66 @@ export default function FilterPanel({ filters, onApply, onClear }) {
       {/* Firmographics & Target Country */}
       <FilterGroup icon={<Building2 className="w-4 h-4" />} title="Firmographics & Target Country" cols="grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
         <FilterField label="Company Size" name="employees" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
-          <select value={local.employees || ""} onChange={(e) => set("employees", e.target.value)} className={selectClass}>
-            <option value="">All sizes</option>
-            <option value="1-10">1-10 Employees</option>
-            <option value="11-50">11-50 Employees</option>
-            <option value="51-200">51-200 Employees</option>
-            <option value="201-500">201-500 Employees</option>
-            <option value="500+">500+ Employees</option>
-          </select>
+          <div className="flex flex-col gap-2 w-full">
+            <select
+              value={(() => {
+                if (!local.employees) return "";
+                if (presetSizes.includes(local.employees)) return local.employees;
+                return "custom";
+              })()}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "custom") {
+                  const min = customMin || "1";
+                  const max = customMax || "100";
+                  set("employees", `${min}-${max}`);
+                } else {
+                  set("employees", val);
+                }
+              }}
+              className={selectClass}
+            >
+              <option value="">All sizes</option>
+              <option value="1-10">1-10 Employees</option>
+              <option value="11-50">11-50 Employees</option>
+              <option value="51-200">51-200 Employees</option>
+              <option value="201-500">201-500 Employees</option>
+              <option value="500+">500+ Employees</option>
+              <option value="custom">Custom Range</option>
+            </select>
+
+            {(local.employees && !presetSizes.includes(local.employees)) && (
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Min"
+                  value={customMin}
+                  onChange={(e) => {
+                    const min = e.target.value;
+                    setCustomMin(min);
+                    set("employees", `${min || "0"}-${customMax || "999999"}`);
+                  }}
+                  className={inputClass}
+                  title="Minimum employee count"
+                />
+                <span className="text-slate-400 text-xs">to</span>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Max"
+                  value={customMax}
+                  onChange={(e) => {
+                    const max = e.target.value;
+                    setCustomMax(max);
+                    set("employees", `${customMin || "0"}-${max || "999999"}`);
+                  }}
+                  className={inputClass}
+                  title="Maximum employee count"
+                />
+              </div>
+            )}
+          </div>
         </FilterField>
 
         <FilterField label="Industry Sector" name="industry" pinnedKeys={pinnedKeys} onTogglePin={handleTogglePin}>
