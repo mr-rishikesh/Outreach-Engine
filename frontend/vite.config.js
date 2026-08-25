@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig(({ mode }) => {
-  // Load env file from the parent directory (root directory)
-  const env = loadEnv(mode, '../', '');
+  // Load env file from the parent directory (root directory) and local directory
+  const env = { ...loadEnv(mode, '../', ''), ...loadEnv(mode, './', '') };
 
   return {
     plugins: [react(), tailwindcss()],

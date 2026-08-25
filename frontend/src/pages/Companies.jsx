@@ -143,7 +143,8 @@ export default function Companies() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this company profile? This action is permanent.")) return;
     try {
-      const res = await fetch(`http://localhost:${import.meta.env.VITE_PORT || "5000"}/api/companies/${id}`, {
+      const baseUrl = import.meta.env.VITE_API_URL || "";
+      const res = await fetch(`${baseUrl}/api/companies/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" }
       });

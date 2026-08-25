@@ -1,21 +1,42 @@
 {
   "version": 2,
-  "name": "outreach-engine",
-  "services": {
-    "frontend": {
-      "root": "frontend/"
+  "builds": [
+    {
+      "src": "backend/server.js",
+      "use": "@vercel/node"
     },
-    "backend": {
-      "root": "backend/",
-      "entrypoint": "server.js"
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
-  },
-  "rewrites": [
-    { "source": "/api/:path*", "destination": { "service": "backend" } },
-    { "source": "/email/:path*", "destination": { "service": "backend" } },
-    { "source": "/upload", "destination": { "service": "backend" } },
-    { "source": "/debug/:path*", "destination": { "service": "backend" } },
-    { "source": "/test", "destination": { "service": "backend" } },
-    { "source": "/(.*)", "destination": { "service": "frontend" } }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/server.js"
+    },
+    {
+      "src": "/email/(.*)",
+      "dest": "backend/server.js"
+    },
+    {
+      "src": "/upload",
+      "dest": "backend/server.js"
+    },
+    {
+      "src": "/debug/(.*)",
+      "dest": "backend/server.js"
+    },
+    {
+      "src": "/test",
+      "dest": "backend/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/$1"
+    }
   ]
 }

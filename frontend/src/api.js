@@ -1,5 +1,4 @@
-const PORT = import.meta.env.VITE_PORT || "5000";
-const BASE_URL = `http://localhost:${PORT}`;
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 const BASE = `${BASE_URL}/api/contacts`;
 
 async function request(url, options = {}) {
