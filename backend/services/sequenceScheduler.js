@@ -5,7 +5,7 @@ import Sequence from "../models/Sequence.js";
 import { sendEmailsNodemailer } from "../email-service/index.js";
 import { isContactBlockedFromEmails } from "../utils/emailFilters.js";
 import { getOrInitializeSettings } from "../controller/settings.controller.js";
-import { formatEmailContent } from "../utils/emailPlaceholder.js";
+import { formatEmailContent, replacePlaceholders } from "../utils/emailPlaceholder.js";
 
 export const runDailyScheduler = async () => {
   console.log("⏰ Daily scheduler execution started...");
@@ -65,12 +65,14 @@ export const runDailyScheduler = async () => {
         let emailSubject = "";
         let emailText = "";
 
+        const rawSubject = sequence.subject || `${sequence.name}`;
+        const resolvedSubject = replacePlaceholders(rawSubject, contact);
+
         if (nextType === "email") {
-          emailSubject = sequence.subject || `${sequence.name}`;
+          emailSubject = resolvedSubject;
           emailText = formatEmailContent(sequence.greeting, sequence.body, sequence.signature, contact);
         } else if (nextType === "followup") {
-          const originalSubject = sequence.subject || `${sequence.name}`;
-          emailSubject = originalSubject.toLowerCase().startsWith("re:") ? originalSubject : `Re: ${originalSubject}`;
+          emailSubject = resolvedSubject.toLowerCase().startsWith("re:") ? resolvedSubject : `Re: ${resolvedSubject}`;
           emailText = formatEmailContent(sequence.followupGreeting, sequence.followupBody, sequence.followupSignature, contact);
         }
 

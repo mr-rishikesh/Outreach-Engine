@@ -13,6 +13,7 @@ export const createSequence = async (req, res) => {
   try {
     const {
       name,
+      subject,
       type,
       greeting,
       body,
@@ -38,6 +39,7 @@ export const createSequence = async (req, res) => {
 
     const sequence = await Sequence.create({
       name,
+      subject,
       type,
       greeting,
       body,
@@ -301,9 +303,11 @@ export const runSequence = async (req, res) => {
       }
 
       try {
+        const rawSubject = sequence.subject || sequence.name;
+        const resolvedSubject = replacePlaceholders(rawSubject, contact);
         const emailSubject = isFollowup
-          ? `Re: ${sequence.name} follow-up`
-          : `${sequence.name}`;
+          ? (resolvedSubject.toLowerCase().startsWith("re:") ? resolvedSubject : `Re: ${resolvedSubject}`)
+          : resolvedSubject;
 
         const emailText = isFollowup
           ? formatEmailContent(sequence.followupGreeting, sequence.followupBody, sequence.followupSignature, contact)
@@ -474,9 +478,11 @@ export const sendSingleSequenceEmail = async (req, res) => {
     const now = new Date();
     const isFollowup = type === "followup";
 
+    const rawSubject = sequence.subject || sequence.name;
+    const resolvedSubject = replacePlaceholders(rawSubject, contact);
     const emailSubject = isFollowup
-      ? replacePlaceholders(sequence.followupSubject || `Re: ${sequence.subject || sequence.name} follow-up`, contact)
-      : replacePlaceholders(sequence.subject || sequence.name, contact);
+      ? (resolvedSubject.toLowerCase().startsWith("re:") ? resolvedSubject : `Re: ${resolvedSubject}`)
+      : resolvedSubject;
 
     const emailText = isFollowup
       ? formatEmailContent(sequence.followupGreeting, sequence.followupBody, sequence.followupSignature, contact)
@@ -572,7 +578,8 @@ export const sendTestSequenceEmail = async (req, res) => {
     };
 
     const emailText = formatEmailContent(greeting, body, signature, mockContact);
-    const emailSubject = step === "followup" ? `Re: ${subject}` : subject;
+    const resolvedSubject = replacePlaceholders(subject || "", mockContact);
+    const emailSubject = step === "followup" ? `Re: ${resolvedSubject}` : resolvedSubject;
 
     const result = await sendEmailsNodemailer({ subject: emailSubject, bdy: emailText }, email);
 
