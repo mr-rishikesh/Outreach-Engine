@@ -68,7 +68,7 @@ export default function StatsBar({ stats }) {
         return (
           <div
             key={index}
-            className={`group bg-white/70 backdrop-blur-md rounded-xl border border-slate-200/60 p-4 shadow-sm hover:border-slate-300 transition-all duration-200 flex flex-col justify-between relative overflow-hidden`}
+            className={`group bg-white/75 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.08)] hover:shadow-[0_12px_24px_-6px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:border-indigo-500/20 transition-all duration-300 flex flex-col justify-between relative overflow-hidden`}
           >
             {/* Subtle glow effect behind */}
             <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${card.gradient} opacity-[0.02] rounded-full blur-2xl transform translate-x-8 -translate-y-8`} />

@@ -67,7 +67,7 @@ export function TrendLineChart({ data = [] }) {
   }
 
   return (
-    <div className="relative bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full group">
+    <div className="relative bg-white/75 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.08)] hover:shadow-[0_12px_24px_-6px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:border-indigo-500/20 transition-all duration-300 flex flex-col h-full group">
       <div className="flex items-center justify-between mb-4">
         <div className="space-y-0.5">
           <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -212,7 +212,7 @@ export function CircularHitRate({ title, percentage, subtext, color = "indigo" }
   const scheme = colorMap[color] || colorMap.indigo;
 
   return (
-    <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between items-center text-center h-full group">
+    <div className="bg-white/75 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.08)] hover:shadow-[0_12px_24px_-6px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:border-indigo-500/20 transition-all duration-300 flex flex-col justify-between items-center text-center h-full group">
       <div className="w-full flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{title}</h3>
         <Percent className={`w-4 h-4 ${scheme.fill} opacity-60`} />
@@ -280,7 +280,7 @@ export function CompanySizeChart({ data = {}, onFilterClick }) {
   ];
 
   return (
-    <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full group">
+    <div className="bg-white/75 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.08)] hover:shadow-[0_12px_24px_-6px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:border-indigo-500/20 transition-all duration-300 flex flex-col h-full group">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Users className="w-4 h-4 text-teal-500" />
@@ -336,7 +336,7 @@ export function IndustryListChart({ data = [], onFilterClick }) {
   const maxVal = Math.max(...data.map(d => d.count), 1);
 
   return (
-    <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full group">
+    <div className="bg-white/75 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.08)] hover:shadow-[0_12px_24px_-6px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:border-indigo-500/20 transition-all duration-300 flex flex-col h-full group">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <HelpCircle className="w-4 h-4 text-pink-500" />
@@ -391,7 +391,7 @@ export function EngagementDistributionChart({ data = {}, onFilterClick }) {
   };
 
   return (
-    <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full group">
+    <div className="bg-white/75 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.08)] hover:shadow-[0_12px_24px_-6px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:border-indigo-500/20 transition-all duration-300 flex flex-col h-full group">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Award className="w-4 h-4 text-emerald-500" />
@@ -448,7 +448,7 @@ export function EmailDeliverabilityChart({ data = {}, onFilterClick }) {
   ];
 
   return (
-    <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full group">
+    <div className="bg-white/75 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.08)] hover:shadow-[0_12px_24px_-6px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:border-indigo-500/20 transition-all duration-300 flex flex-col h-full group">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Shield className="w-4 h-4 text-cyan-500" />
@@ -507,7 +507,7 @@ export function GeographicBreakdownChart({ data = [], onFilterClick }) {
   const maxVal = Math.max(...data.map(d => d.count), 1);
 
   return (
-    <div className="bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full group">
+    <div className="bg-white/75 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.08)] hover:shadow-[0_12px_24px_-6px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:border-indigo-500/20 transition-all duration-300 flex flex-col h-full group">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Globe className="w-4 h-4 text-pink-500" />
@@ -610,7 +610,7 @@ export function LastSentTrendChart({ data = [] }) {
   }
 
   return (
-    <div className="relative bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full group">
+    <div className="relative bg-white/75 backdrop-blur-xl rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.08)] hover:shadow-[0_12px_24px_-6px_rgba(99,102,241,0.12)] hover:-translate-y-0.5 hover:border-indigo-500/20 transition-all duration-300 flex flex-col h-full group">
       <div className="flex items-center justify-between mb-4">
         <div className="space-y-0.5">
           <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -633,7 +633,11 @@ export function LastSentTrendChart({ data = [] }) {
               top: `${(points[hoveredIndex].y / height) * 100 - 8}%`,
             }}
           >
-            <span className="font-bold">{points[hoveredIndex].date}</span>
+            <span className="font-bold">
+              {points[hoveredIndex].date.split("-")[1]
+                ? `${points[hoveredIndex].date.split("-")[1]}/${points[hoveredIndex].date.split("-")[0].slice(-2)}`
+                : points[hoveredIndex].date}
+            </span>
             <span className="text-emerald-300 font-semibold">{formatNumber(points[hoveredIndex].count)} Emails Sent</span>
           </div>
         )}
@@ -690,38 +694,38 @@ export function LastSentTrendChart({ data = [] }) {
             <text
               key={i}
               x={p.x}
-              y={height - paddingBottom + 16}
-              className="text-[10px] text-slate-400 font-medium text-center"
+              y={height - 12}
               textAnchor="middle"
+              className="text-[10px] fill-slate-400 font-semibold"
             >
-              {p.date}
+              {p.date.split("-")[1] ? `${p.date.split("-")[1]}/${p.date.split("-")[0].slice(-2)}` : p.date}
             </text>
           ))}
 
           {/* Hotspots for interaction */}
-          {points.map((p, i) => (
-            <g key={i}>
-              {hoveredIndex === i && (
-                <>
-                  <line
-                    x1={p.x}
-                    y1={paddingTop}
-                    x2={p.x}
-                    y2={height - paddingBottom}
-                    stroke="#10b981"
-                    strokeWidth={1.5}
-                    strokeDasharray="2 2"
-                  />
-                  <circle cx={p.x} cy={p.y} r={6} fill="#ffffff" stroke="#10b981" strokeWidth={3} />
-                </>
+          {points.map((p, idx) => (
+            <g key={idx}>
+              {hoveredIndex === idx && (
+                <line
+                  x1={p.x}
+                  y1={paddingTop}
+                  x2={p.x}
+                  y2={height - paddingBottom}
+                  stroke="#34d399"
+                  strokeWidth={1.5}
+                  strokeDasharray="2 2"
+                />
               )}
               <circle
                 cx={p.x}
                 cy={p.y}
-                r={4}
-                fill="#10b981"
-                className="transition-all duration-200"
-                opacity={hoveredIndex === i ? 0 : 1}
+                r={hoveredIndex === idx ? 6 : 4}
+                fill={hoveredIndex === idx ? "#10b981" : "#ffffff"}
+                stroke="#10b981"
+                strokeWidth={hoveredIndex === idx ? 3 : 2}
+                className="transition-all duration-150 cursor-pointer"
+                onMouseEnter={() => setHoveredIndex(idx)}
+                onMouseLeave={() => setHoveredIndex(null)}
               />
               <rect
                 x={p.x - dx / 2}
@@ -730,7 +734,7 @@ export function LastSentTrendChart({ data = [] }) {
                 height={graphHeight}
                 fill="transparent"
                 className="cursor-pointer"
-                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseEnter={() => setHoveredIndex(idx)}
                 onMouseLeave={() => setHoveredIndex(null)}
               />
             </g>

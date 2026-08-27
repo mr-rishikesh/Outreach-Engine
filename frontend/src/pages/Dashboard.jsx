@@ -154,42 +154,44 @@ export default function Dashboard() {
       {/* 2. Global KPIs stats bar */}
       {stats && <StatsBar stats={stats} />}
 
-      {/* 3. Section Tabs */}
-      <div className="flex border-b border-slate-200/80">
-        <button
-          onClick={() => setActiveTab("analytics")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "analytics"
-              ? "border-indigo-600 text-indigo-600"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span>📊 Analytics Dashboard</span>
-        </button>
-        <button
-          onClick={() => setActiveTab("contacts")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "contacts"
-              ? "border-indigo-600 text-indigo-600"
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          <Users2 className="w-4 h-4" />
-          <span>👥 CRM Contact Manager</span>
-        </button>
+      {/* 3. Section Tabs - Modern Capsule design */}
+      <div className="flex justify-start">
+        <div className="inline-flex p-1 bg-slate-100/90 backdrop-blur-xl rounded-xl border border-slate-200/50 shadow-inner">
+          <button
+            onClick={() => setActiveTab("analytics")}
+            className={`flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-lg transition-all duration-300 cursor-pointer ${
+              activeTab === "analytics"
+                ? "bg-white text-indigo-600 shadow-[0_2px_8px_-1px_rgba(99,102,241,0.12)]"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50/50"
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>Analytics Dashboard</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("contacts")}
+            className={`flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-lg transition-all duration-300 cursor-pointer ${
+              activeTab === "contacts"
+                ? "bg-white text-indigo-600 shadow-[0_2px_8px_-1px_rgba(99,102,241,0.12)]"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50/50"
+            }`}
+          >
+            <Users2 className="w-3.5 h-3.5" />
+            <span>CRM Contact Manager</span>
+          </button>
+        </div>
       </div>
 
       {/* 4. Tab Contents */}
       {activeTab === "analytics" ? (
         /* Analytics Tab content */
         <div className="space-y-6">
+          {/* Row 1: Outreach Trend & Reply Conversion */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2">
               <TrendLineChart data={stats?.trend || []} />
-              <LastSentTrendChart data={stats?.lastSentTrend || []} />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
+            <div>
               <CircularHitRate
                 title="Emails Reply conversion"
                 percentage={
@@ -200,6 +202,15 @@ export default function Dashboard() {
                 subtext="Replies received out of total contacts"
                 color="teal"
               />
+            </div>
+          </div>
+
+          {/* Row 2: Dispatch Trend & Campaign Hit Rate */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <LastSentTrendChart data={stats?.lastSentTrend || []} />
+            </div>
+            <div>
               <CircularHitRate
                 title="Campaign Hit Rate"
                 percentage={
