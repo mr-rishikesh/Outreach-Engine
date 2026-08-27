@@ -159,4 +159,10 @@ export const startScheduler = () => {
     await runDailyScheduler();
   });
   console.log("⏰ Cron daily scheduler registered for 9:00 AM.");
+
+  // Run once on startup to process any missed/pending emails immediately
+  console.log("⏰ Running initial startup scheduler check...");
+  runDailyScheduler().catch(err => {
+    console.error("❌ Error running startup scheduler check:", err);
+  });
 };

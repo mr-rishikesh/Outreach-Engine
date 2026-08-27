@@ -428,6 +428,7 @@ export const getContactStats = async (req, res) => {
       engagementCounts,
       emailStatusCounts,
       countryCounts,
+      lastSentTrendCounts
     ] = await Promise.all([
       Contact.countDocuments(),
       Contact.aggregate([
@@ -467,6 +468,21 @@ export const getContactStats = async (req, res) => {
         { $group: { _id: "$country", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 6 }
+      ]),
+      Contact.aggregate([
+        {
+          $match: {
+            lastSentDate: { $ne: null }
+          }
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m", date: "$lastSentDate" } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } },
+        { $limit: 12 }
       ])
     ]);
 
@@ -519,6 +535,7 @@ export const getContactStats = async (req, res) => {
         industries: industries.map(ind => ({ name: ind._id || "Unknown", count: ind.count })),
         employeeBreakdown: employeeCategories,
         trend: trendCounts.map(t => ({ date: t._id, count: t.count })),
+        lastSentTrend: lastSentTrendCounts.map(t => ({ date: t._id, count: t.count })),
         purposeBreakdown: purposeMap,
         engagementBreakdown: engagementMap,
         emailStatusBreakdown: emailStatusMap,

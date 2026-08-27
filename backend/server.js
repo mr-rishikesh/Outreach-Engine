@@ -98,8 +98,8 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/outreach-cr
   // Debug: Check if data exists
   const count = await Contact.countDocuments();
   console.log(`📊 Total contacts in database: ${count}`);
-  await backfillLeadIds();
-  await backfillCompanies();
+  backfillLeadIds();
+  backfillCompanies();
   startScheduler();
 })
   .catch(err => console.error("❌ MongoDB error:", err));

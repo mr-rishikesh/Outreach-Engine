@@ -38,5 +38,11 @@
       "src": "/(.*)",
       "dest": "frontend/$1"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/batches/scheduler/run",
+      "schedule": "0 9 * * *"
+    }
   ]
 }

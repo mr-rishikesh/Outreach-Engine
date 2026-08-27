@@ -8,6 +8,7 @@ import BulkActions from "../components/BulkActions";
 import StatsBar from "../components/StatsBar";
 import {
   TrendLineChart,
+  LastSentTrendChart,
   CircularHitRate,
   CompanySizeChart,
   IndustryListChart,
@@ -184,8 +185,9 @@ export default function Dashboard() {
         /* Analytics Tab content */
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
               <TrendLineChart data={stats?.trend || []} />
+              <LastSentTrendChart data={stats?.lastSentTrend || []} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
               <CircularHitRate

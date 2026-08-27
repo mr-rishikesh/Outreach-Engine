@@ -14,5 +14,6 @@ router.get("/sequence/:sequenceId", getSequenceBatches);
 router.patch("/:id", updateBatch);
 router.delete("/:id", deleteBatch);
 router.post("/scheduler/run", runSchedulerManual);
+router.get("/scheduler/run", runSchedulerManual);
 
 export default router;

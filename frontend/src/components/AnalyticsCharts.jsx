@@ -546,3 +546,197 @@ export function GeographicBreakdownChart({ data = [], onFilterClick }) {
     </div>
   );
 }
+
+// 8. Last Sent Activity Trend Month-Wise
+export function LastSentTrendChart({ data = [] }) {
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  
+  if (!data || data.length === 0) {
+    data = [
+      { date: "2026-01", count: 0 },
+      { date: "2026-02", count: 0 },
+      { date: "2026-03", count: 0 },
+      { date: "2026-04", count: 0 },
+      { date: "2026-05", count: 0 },
+      { date: "2026-06", count: 0 },
+    ];
+  }
+
+  const width = 600;
+  const height = 240;
+  const paddingLeft = 45;
+  const paddingRight = 20;
+  const paddingTop = 25;
+  const paddingBottom = 35;
+
+  const values = data.map((d) => d.count);
+  const maxVal = Math.max(...values, 50);
+  const minVal = 0;
+  const valRange = maxVal - minVal;
+
+  const graphWidth = width - paddingLeft - paddingRight;
+  const graphHeight = height - paddingTop - paddingBottom;
+  const dx = data.length > 1 ? graphWidth / (data.length - 1) : graphWidth;
+
+  const points = data.map((d, i) => {
+    const x = paddingLeft + i * dx;
+    const y = height - paddingBottom - ((d.count - minVal) / valRange) * graphHeight;
+    return { x, y, ...d };
+  });
+
+  // Construct SVG Path using Bezier curve
+  let pathD = "";
+  let areaD = "";
+  if (points.length > 0) {
+    pathD = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+      const cp1x = p0.x + dx / 3;
+      const cp1y = p0.y;
+      const cp2x = p1.x - dx / 3;
+      const cp2y = p1.y;
+      pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+    }
+    areaD = `${pathD} L ${points[points.length - 1].x} ${height - paddingBottom} L ${points[0].x} ${height - paddingBottom} Z`;
+  }
+
+  const gridLines = [];
+  const divisions = 4;
+  for (let i = 0; i <= divisions; i++) {
+    const yVal = minVal + (valRange / divisions) * i;
+    const y = height - paddingBottom - (i / divisions) * graphHeight;
+    gridLines.push({ y, label: Math.round(yVal) });
+  }
+
+  return (
+    <div className="relative bg-white/70 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full group">
+      <div className="flex items-center justify-between mb-4">
+        <div className="space-y-0.5">
+          <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            Email Dispatch Trend (Last Sent Date)
+          </h3>
+          <p className="text-xs text-slate-400">Monthly breakdown of sent emails based on last outbound outreach</p>
+        </div>
+        <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full">
+          Outbox Activity
+        </span>
+      </div>
+
+      <div className="relative flex-grow min-h-[220px]">
+        {hoveredIndex !== null && points[hoveredIndex] && (
+          <div
+            className="absolute z-10 bg-slate-900 text-white text-xs rounded-lg px-2.5 py-1.5 shadow-lg border border-slate-700 pointer-events-none transition-all duration-150 transform -translate-x-1/2 -translate-y-full flex flex-col gap-0.5"
+            style={{
+              left: `${(points[hoveredIndex].x / width) * 100}%`,
+              top: `${(points[hoveredIndex].y / height) * 100 - 8}%`,
+            }}
+          >
+            <span className="font-bold">{points[hoveredIndex].date}</span>
+            <span className="text-emerald-300 font-semibold">{formatNumber(points[hoveredIndex].count)} Emails Sent</span>
+          </div>
+        )}
+
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full select-none overflow-visible">
+          <defs>
+            <linearGradient id="areaGradLastSent" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0.00" />
+            </linearGradient>
+          </defs>
+
+          {/* Grid lines */}
+          {gridLines.map((gl, i) => (
+            <g key={i}>
+              <line
+                x1={paddingLeft}
+                y1={gl.y}
+                x2={width - paddingRight}
+                y2={gl.y}
+                stroke="#e2e8f0"
+                strokeWidth={1}
+                strokeDasharray="4 4"
+              />
+              <text
+                x={paddingLeft - 8}
+                y={gl.y + 4}
+                className="text-[10px] text-slate-400 font-medium text-right"
+                textAnchor="end"
+              >
+                {gl.label}
+              </text>
+            </g>
+          ))}
+
+          {/* Area Path */}
+          {areaD && <path d={areaD} fill="url(#areaGradLastSent)" />}
+
+          {/* Line Path */}
+          {pathD && (
+            <path
+              d={pathD}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="drop-shadow-[0_2px_4px_rgba(16,185,129,0.2)]"
+            />
+          )}
+
+          {/* X axis labels */}
+          {points.map((p, i) => (
+            <text
+              key={i}
+              x={p.x}
+              y={height - paddingBottom + 16}
+              className="text-[10px] text-slate-400 font-medium text-center"
+              textAnchor="middle"
+            >
+              {p.date}
+            </text>
+          ))}
+
+          {/* Hotspots for interaction */}
+          {points.map((p, i) => (
+            <g key={i}>
+              {hoveredIndex === i && (
+                <>
+                  <line
+                    x1={p.x}
+                    y1={paddingTop}
+                    x2={p.x}
+                    y2={height - paddingBottom}
+                    stroke="#10b981"
+                    strokeWidth={1.5}
+                    strokeDasharray="2 2"
+                  />
+                  <circle cx={p.x} cy={p.y} r={6} fill="#ffffff" stroke="#10b981" strokeWidth={3} />
+                </>
+              )}
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={4}
+                fill="#10b981"
+                className="transition-all duration-200"
+                opacity={hoveredIndex === i ? 0 : 1}
+              />
+              <rect
+                x={p.x - dx / 2}
+                y={paddingTop}
+                width={dx}
+                height={graphHeight}
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              />
+            </g>
+          ))}
+        </svg>
+      </div>
+    </div>
+  );
+}
